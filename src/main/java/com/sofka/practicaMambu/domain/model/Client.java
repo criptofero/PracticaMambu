@@ -1,5 +1,8 @@
 package com.sofka.practicaMambu.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Map;
 
 public class Client {
@@ -77,6 +80,7 @@ public class Client {
         this.preferredLanguage = preferredLanguage;
     }
 
+    //@JsonProperty("_personalizados")
     public Map<String, String> getCustomFields() {
         return customFields;
     }
