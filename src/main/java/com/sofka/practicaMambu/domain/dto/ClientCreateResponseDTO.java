@@ -1,7 +1,10 @@
 package com.sofka.practicaMambu.domain.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.Map;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ClientCreateResponseDTO {
     private String encodedKey;
     private String id;
@@ -14,11 +17,16 @@ public class ClientCreateResponseDTO {
     private String preferredLanguage;
     private String gender;
     private String clientRoleKey;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private int loanCycle;
+
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private int groupLoanCycle;
     private String[] addresses;
     private String[] idDocuments;
     private Map<String,String> customFields;
+
+    private MambuErrorResponse[] errors;
 
     public String getEncodedKey() {
         return encodedKey;
@@ -146,5 +154,13 @@ public class ClientCreateResponseDTO {
 
     public void setCustomFields(Map<String, String> customFields) {
         this.customFields = customFields;
+    }
+
+    public MambuErrorResponse[] getErrors() {
+        return errors;
+    }
+
+    public void setErrors(MambuErrorResponse[] errors) {
+        this.errors = errors;
     }
 }

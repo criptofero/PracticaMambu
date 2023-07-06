@@ -7,10 +7,7 @@ import com.sofka.practicaMambu.infraestructure.ClientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/client")
@@ -20,6 +17,7 @@ public class ClientController {
     private ClientService clientService;
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<ClientCreateResponseDTO> createClient(@RequestBody Client client){
         ClientCreateResponseDTO responseDTO = clientService.createClient(client);
         ResponseEntity responseEntity = new ResponseEntity(responseDTO, HttpStatus.OK);
