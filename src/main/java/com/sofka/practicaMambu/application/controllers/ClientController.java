@@ -20,8 +20,7 @@ public class ClientController {
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<ClientCreateResponseDTO> createClient(@RequestBody Client client){
         ClientCreateResponseDTO responseDTO = clientService.createClient(client);
-        ResponseEntity responseEntity = new ResponseEntity(responseDTO, HttpStatus.OK);
-        System.out.println("%s %s".formatted(responseDTO.getFirstName(),responseDTO.getLastName()));
+        ResponseEntity responseEntity = new ResponseEntity(responseDTO, responseDTO.getStatusCode());
         return responseEntity;
     }
 }

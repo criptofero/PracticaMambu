@@ -10,12 +10,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @Service
@@ -36,14 +38,15 @@ public class ClientRepository implements ClientService {
     public ClientCreateResponseDTO createClient(Client client) {
         String operationUrl = mambuAPIRootUrl.concat("/clients/");
         ObjectMapper mapper = new ObjectMapper();
-        ClientCreateResponseDTO createResponse;
+        ClientCreateResponseDTO createResponse = new ClientCreateResponseDTO();
+        ResponseEntity<ClientCreateResponseDTO> responseResult = null;
         String jsonBody;
         try {
             if (client.getNotes() == null) {
                 client.setNotes("Cliente creado desde backend, account: [%s], instanceName: %s".formatted(mambuAPIUserName, InetAddress.getLocalHost().getHostName()));
             }
             jsonBody = mapper.writeValueAsString(client);
-            UUID requestKey = UUID.randomUUID();
+            UUID requestKey = UUID.nameUUIDFromBytes(jsonBody.getBytes(StandardCharsets.UTF_8));
             org.springframework.http.HttpHeaders requestHeaders = new org.springframework.http.HttpHeaders();
             requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
             requestHeaders.set("Accept", "application/vnd.mambu.v2+json");
@@ -51,13 +54,11 @@ public class ClientRepository implements ClientService {
             requestHeaders.set("Idempotency-Key", requestKey.toString());
             HttpEntity<String> httpEntity = new HttpEntity<>(jsonBody, requestHeaders);
             restTemplate = new RestTemplate();
-            var responseResult = restTemplate.postForEntity(operationUrl, httpEntity, ClientCreateResponseDTO.class);
+            responseResult = restTemplate.postForEntity(operationUrl, httpEntity, ClientCreateResponseDTO.class);
             System.out.println("Status Code: " + responseResult.getStatusCode());
             boolean clientCreated = responseResult.getStatusCode().isSameCodeAs(HttpStatusCode.valueOf(HttpStatus.CREATED.value()));
             createResponse = responseResult.getBody();
-            /*if (clientCreated){
-                createResponse = responseResult.getBody();
-            }*/
+            createResponse.setStatusCode(responseResult.getStatusCode());
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } catch (RestClientException e) {
@@ -66,6 +67,13 @@ public class ClientRepository implements ClientService {
             String jsonError = e instanceof HttpStatusCodeException ?
                     ((HttpStatusCodeException) e).getResponseBodyAsString()
                     : "";
+            var errorCode = ((HttpStatusCodeException) e).getStatusCode();
+            createResponse.setStatusCode(errorCode);
+            System.err.println("errorCode: %s".formatted(errorCode.toString()));
+            System.err.println("value: %s".formatted(String.valueOf(errorCode.value())));
+            System.err.println("isError: %s".formatted(String.valueOf(errorCode.isError())));
+            System.err.println("is4xxClientError: %s".formatted(String.valueOf(errorCode.is4xxClientError())));
+            System.err.println("is2xxSuccessful: %s".formatted(String.valueOf(errorCode.is2xxSuccessful())));
             try {
                 jsonError = jsonError.substring(jsonError.indexOf("["), jsonError.indexOf("]") + 1);
                 MambuErrorResponse[] errorResponse = new ObjectMapper().readValue(jsonError, MambuErrorResponse[].class);
