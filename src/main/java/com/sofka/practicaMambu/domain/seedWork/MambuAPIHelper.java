@@ -21,6 +21,8 @@ public class MambuAPIHelper {
         if (requestHeaders != null){
             UUID requestKey = CommonUtils.generateNamedUUID(requestPayload);
             requestHeaders.set("Idempotency-Key", requestKey.toString());
+            System.out.println("Payload:\n%s".formatted(requestPayload));
+            System.out.println("Generated Idempotency-Key: %s".formatted(requestKey.toString()));
         }
     }
 }

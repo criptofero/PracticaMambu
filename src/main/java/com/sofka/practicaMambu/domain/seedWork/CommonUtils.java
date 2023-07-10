@@ -12,7 +12,8 @@ public class CommonUtils {
     public static UUID generateNamedUUID(String inputText){
         UUID resultUUID = null;
         if (inputText != null && !inputText.isEmpty()){
-            resultUUID = UUID.nameUUIDFromBytes(inputText.getBytes(StandardCharsets.UTF_8));
+            //resultUUID = UUID.nameUUIDFromBytes(inputText.getBytes(StandardCharsets.UTF_8));
+            resultUUID = UUID5Generator.fromUTF8(inputText);
         }
         return resultUUID;
     }
