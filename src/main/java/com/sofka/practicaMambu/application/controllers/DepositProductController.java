@@ -1,8 +1,10 @@
 package com.sofka.practicaMambu.application.controllers;
 
 import com.sofka.practicaMambu.domain.dto.CreateDepositAccountResponse;
+import com.sofka.practicaMambu.domain.dto.CreateDepositTransactionResponse;
 import com.sofka.practicaMambu.domain.dto.DepositProductResponse;
 import com.sofka.practicaMambu.domain.model.DepositAccount;
+import com.sofka.practicaMambu.domain.model.DepositTransaction;
 import com.sofka.practicaMambu.domain.service.DepositProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,10 +24,17 @@ public class DepositProductController {
         return responseEntity;
     }
 
-    @PostMapping
+    @PostMapping("/accounts")
     public ResponseEntity<CreateDepositAccountResponse> createDepositAccount(@RequestBody DepositAccount account) {
         CreateDepositAccountResponse responseDTO = productService.CreateAccount(account);
         ResponseEntity responseEntity = new ResponseEntity(responseDTO, responseDTO.getStatusCode());
+        return responseEntity;
+    }
+
+    @PostMapping("/accounts/{accountKey}/deposit-transacions")
+    public ResponseEntity<CreateDepositTransactionResponse> createDepositTransaction(@RequestBody DepositTransaction transaction, @PathVariable String accountKey) {
+        CreateDepositTransactionResponse transactionResponse = productService.MakeDeposit(transaction, accountKey);
+        ResponseEntity responseEntity = new ResponseEntity(transactionResponse, transactionResponse.getStatusCode());
         return responseEntity;
     }
 }
