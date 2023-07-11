@@ -164,4 +164,57 @@ public class DepositProductRepository implements DepositProductService {
         }
         return createDepositResponse;
     }
+
+    @Override
+    public CreateDepositTransactionResponse MakeWithdrawal(DepositTransaction withdrawal, String parentAccountKey) {
+        CreateDepositTransactionResponse createWithdrawalResponse = new CreateDepositTransactionResponse();
+        String operationUrl = mambuAPIRootUrl.concat("/deposits/%s/withdrawal-transactions".formatted(parentAccountKey));
+        ObjectMapper mapper = new ObjectMapper();
+        ResponseEntity<CreateDepositTransactionResponse> responseResult = null;
+        String jsonBody;
+        try {
+            var transactionDetails = new TransactionDetail();
+            transactionDetails.setTransactionChannelId(DEPOSIT_ACCOUNT_DEFAULT_TRAN_CHANNEL);
+            withdrawal.setTransactionDetails(transactionDetails);
+            jsonBody = mapper.writeValueAsString(withdrawal);
+            HttpHeaders requestHeaders = new HttpHeaders();
+            requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
+            MambuAPIHelper.addAcceptHeader(requestHeaders);
+            MambuAPIHelper.addContentHeader(requestHeaders);
+            MambuAPIHelper.addIdempotencyHeader(requestHeaders, jsonBody);
+            HttpEntity<String> httpEntity = new HttpEntity<>(jsonBody, requestHeaders);
+            RestTemplate restTemplate = new RestTemplate();
+            responseResult = restTemplate.postForEntity(operationUrl, httpEntity, CreateDepositTransactionResponse.class);
+            createWithdrawalResponse = responseResult.getBody();
+            createWithdrawalResponse.setStatusCode(responseResult.getStatusCode());
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        } catch (RestClientException e) {
+            System.err.println(e.toString());
+            createWithdrawalResponse = new CreateDepositTransactionResponse();
+            String jsonError = e instanceof HttpStatusCodeException ?
+                    ((HttpStatusCodeException) e).getResponseBodyAsString()
+                    : "";
+            var errorCode = ((HttpStatusCodeException) e).getStatusCode();
+            createWithdrawalResponse.setStatusCode(errorCode);
+            System.err.println("errorCode: %s".formatted(errorCode.toString()));
+            System.err.println("value: %s".formatted(String.valueOf(errorCode.value())));
+            System.err.println("isError: %s".formatted(String.valueOf(errorCode.isError())));
+            System.err.println("is4xxClientError: %s".formatted(String.valueOf(errorCode.is4xxClientError())));
+            System.err.println("is2xxSuccessful: %s".formatted(String.valueOf(errorCode.is2xxSuccessful())));
+            if (!jsonError.isEmpty()) {
+                try {
+                    jsonError = jsonError.substring(jsonError.indexOf("["), jsonError.indexOf("]") + 1);
+                    MambuErrorResponse[] errorResponse = new ObjectMapper().readValue(jsonError, MambuErrorResponse[].class);
+                    createWithdrawalResponse.setErrors(errorResponse);
+                } catch (JsonProcessingException ex) {
+
+                }
+            }
+        } catch (Exception e) {
+            System.err.println(e.toString());
+            throw new RuntimeException(e);
+        }
+        return createWithdrawalResponse;
+    }
 }

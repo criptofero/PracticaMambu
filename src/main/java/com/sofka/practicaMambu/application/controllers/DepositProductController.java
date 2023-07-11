@@ -37,4 +37,11 @@ public class DepositProductController {
         ResponseEntity responseEntity = new ResponseEntity(transactionResponse, transactionResponse.getStatusCode());
         return responseEntity;
     }
+
+    @PostMapping("/accounts/{accountKey}/withdrawal-transactions")
+    public ResponseEntity<CreateDepositTransactionResponse> createWithdrawalTransaction(@RequestBody DepositTransaction transaction, @PathVariable String accountKey) {
+        CreateDepositTransactionResponse transactionResponse = productService.MakeWithdrawal(transaction, accountKey);
+        ResponseEntity responseEntity = new ResponseEntity(transactionResponse, transactionResponse.getStatusCode());
+        return responseEntity;
+    }
 }

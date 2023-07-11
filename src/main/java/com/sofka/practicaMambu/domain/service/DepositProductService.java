@@ -12,4 +12,6 @@ public interface DepositProductService {
     CreateDepositAccountResponse CreateAccount(DepositAccount account);
 
     CreateDepositTransactionResponse MakeDeposit(DepositTransaction deposit, String parentAccountKey);
+
+    CreateDepositTransactionResponse MakeWithdrawal(DepositTransaction withdrawal, String parentAccountKey);
 }
