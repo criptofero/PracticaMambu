@@ -1,5 +1,8 @@
 package com.sofka.practicaMambu.domain.dto;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class MambuErrorResponse {
     private int errorCode;
 
@@ -30,5 +33,17 @@ public class MambuErrorResponse {
 
     public void setErrorSource(String errorSource) {
         this.errorSource = errorSource;
+    }
+
+    public static MambuErrorResponse[] fromJson(String jsonErrors){
+        MambuErrorResponse[] errorResponse = null;
+        if (jsonErrors != null && !jsonErrors.isEmpty()) {
+            try {
+                errorResponse = new ObjectMapper().readValue(jsonErrors, MambuErrorResponse[].class);
+            } catch (JsonProcessingException e) {
+                errorResponse = null;
+            }
+        }
+        return errorResponse;
     }
 }

@@ -87,13 +87,9 @@ public class ClientRepository implements ClientService {
         System.err.println("is4xxClientError: %s".formatted(String.valueOf(errorCode.is4xxClientError())));
         System.err.println("is2xxSuccessful: %s".formatted(String.valueOf(errorCode.is2xxSuccessful())));
         if (!jsonError.isEmpty()) {
-            try {
-                jsonError = jsonError.substring(jsonError.indexOf("["), jsonError.indexOf("]") + 1);
-                MambuErrorResponse[] errorResponse = new ObjectMapper().readValue(jsonError, MambuErrorResponse[].class);
-                createResponse.setErrors(errorResponse);
-            } catch (JsonProcessingException ex) {
-
-            }
+            jsonError = jsonError.substring(jsonError.indexOf("["), jsonError.indexOf("]") + 1);
+            MambuErrorResponse[] errorResponse = MambuErrorResponse.fromJson(jsonError);
+            createResponse.setErrors(errorResponse);
         }
         return createResponse;
     }
@@ -101,20 +97,32 @@ public class ClientRepository implements ClientService {
     @Override
     public ClientOnboardingResponse activateClient(ClientOnboardingCommand command) {
         ClientOnboardingResponse onboardingResponse = null;
+        String jsonError;
         if (command.getClientInfo() != null) {
             var clientCreateResponse = createClient(command.getClientInfo());
-            if (clientCreateResponse.getStatusCode().isError()){
-                throw new ResponseStatusException(clientCreateResponse.getStatusCode(), "Error al intentar crear cliente");
+            if (clientCreateResponse.getStatusCode().isError()) {
+                try {
+                    jsonError = new ObjectMapper().writeValueAsString(clientCreateResponse.getErrors());
+                } catch (JsonProcessingException e) {
+                    jsonError = "";
+                }
+                throw new ResponseStatusException(clientCreateResponse.getStatusCode(), jsonError);
             }
             var accountInfo = command.getAccountInfo();
             accountInfo.setAccountHolderKey(clientCreateResponse.getEncodedKey());
             var accountCreateResponse = productService.CreateAccount(accountInfo);
-            if (accountCreateResponse.getStatusCode().isError()){
-                throw new ResponseStatusException(accountCreateResponse.getStatusCode(), "Error al intentar crear cuenta");
+            if (accountCreateResponse.getStatusCode().isError()) {
+                try {
+                    jsonError = new ObjectMapper().writeValueAsString(accountCreateResponse.getErrors());
+                } catch (JsonProcessingException e) {
+                    jsonError = "";
+                }
+                throw new ResponseStatusException(accountCreateResponse.getStatusCode(), jsonError);
             }
             onboardingResponse = new ClientOnboardingResponse();
             onboardingResponse.setClientInfo(clientCreateResponse);
             onboardingResponse.setAccountInfo(accountCreateResponse);
+            onboardingResponse.setStatusCode(accountCreateResponse.getStatusCode());
         }
         return onboardingResponse;
     }
