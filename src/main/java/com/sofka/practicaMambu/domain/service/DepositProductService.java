@@ -1,8 +1,6 @@
 package com.sofka.practicaMambu.domain.service;
 
-import com.sofka.practicaMambu.domain.dto.CreateDepositAccountResponse;
-import com.sofka.practicaMambu.domain.dto.CreateDepositTransactionResponse;
-import com.sofka.practicaMambu.domain.dto.DepositProductResponse;
+import com.sofka.practicaMambu.domain.dto.*;
 import com.sofka.practicaMambu.domain.model.DepositAccount;
 import com.sofka.practicaMambu.domain.model.DepositTransaction;
 

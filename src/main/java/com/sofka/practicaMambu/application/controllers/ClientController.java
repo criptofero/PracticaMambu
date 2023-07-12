@@ -1,6 +1,8 @@
 package com.sofka.practicaMambu.application.controllers;
 
 import com.sofka.practicaMambu.domain.dto.ClientCreateResponseDTO;
+import com.sofka.practicaMambu.domain.dto.ClientOnboardingCommand;
+import com.sofka.practicaMambu.domain.dto.ClientOnboardingResponse;
 import com.sofka.practicaMambu.domain.model.Client;
 import com.sofka.practicaMambu.domain.service.ClientService;
 import com.sofka.practicaMambu.infraestructure.ClientRepository;
@@ -22,5 +24,11 @@ public class ClientController {
         ClientCreateResponseDTO responseDTO = clientService.createClient(client);
         ResponseEntity responseEntity = new ResponseEntity(responseDTO, responseDTO.getStatusCode());
         return responseEntity;
+    }
+
+    @PostMapping("/onboarding")
+    public ResponseEntity<ClientOnboardingResponse> activateClient(@RequestBody ClientOnboardingCommand command){
+        var onboardingResponse = clientService.activateClient(command);
+        return new ResponseEntity<>(onboardingResponse, HttpStatus.OK);
     }
 }
