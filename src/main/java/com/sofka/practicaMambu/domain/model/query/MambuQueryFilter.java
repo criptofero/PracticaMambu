@@ -7,6 +7,8 @@ public class MambuQueryFilter {
     private String field;
     private String operator;
     private String value;
+    private String secondValue;
+    private String[] values;
 
     public String getField() {
         return field;
@@ -30,5 +32,21 @@ public class MambuQueryFilter {
 
     public void setValue(String value) {
         this.value = value;
+    }
+
+    public String getSecondValue() {
+        return secondValue;
+    }
+
+    public void setSecondValue(String secondValue) {
+        this.secondValue = secondValue;
+    }
+
+    public String[] getValues() {
+        return values;
+    }
+
+    public void setValues(String[] values) {
+        this.values = values;
     }
 }

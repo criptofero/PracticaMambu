@@ -50,7 +50,7 @@ public class DepositProductController {
     @GetMapping("/accounts/{accountKey}/transactions")
     public ResponseEntity<TransactionsQueryResponse> getAccountTransactions(@RequestBody TransactionFilterInfo filterInfo){
         TransactionsQueryResponse queryResponse = productService.getAccountTransactions(filterInfo);
-        ResponseEntity responseEntity = new ResponseEntity(queryResponse, HttpStatus.OK);
+        ResponseEntity responseEntity = new ResponseEntity(queryResponse, queryResponse.getStatusCode());
         return  responseEntity;
     }
 }

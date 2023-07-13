@@ -216,11 +216,36 @@ public class DepositProductRepository implements DepositProductService {
             RestTemplate restTemplate = new RestTemplate();
             responseResult = restTemplate.exchange(operationUrl, HttpMethod.POST, httpEntity, DepositTransaction[].class);
             queryResponse = new TransactionsQueryResponse();
+            queryResponse.setStatusCode(responseResult.getStatusCode());
             queryResponse.setTransactions(responseResult.getBody());
+        } catch (RestClientException e) {
+            queryResponse = handleQueryErrorResponse(e);
         } catch (Exception e) {
             System.err.println(e.toString());
             throw new RuntimeException(e);
         }
         return queryResponse;
+    }
+
+    private TransactionsQueryResponse handleQueryErrorResponse(RestClientException e) {
+        TransactionsQueryResponse queryErrorResponse = null;
+        System.err.println(e.toString());
+        queryErrorResponse = new TransactionsQueryResponse();
+        String jsonError = e instanceof HttpStatusCodeException ?
+                ((HttpStatusCodeException) e).getResponseBodyAsString()
+                : "";
+        var errorCode = ((HttpStatusCodeException) e).getStatusCode();
+        queryErrorResponse.setStatusCode(errorCode);
+        System.err.println("errorCode: %s".formatted(errorCode.toString()));
+        System.err.println("value: %s".formatted(String.valueOf(errorCode.value())));
+        System.err.println("isError: %s".formatted(String.valueOf(errorCode.isError())));
+        System.err.println("is4xxClientError: %s".formatted(String.valueOf(errorCode.is4xxClientError())));
+        System.err.println("is2xxSuccessful: %s".formatted(String.valueOf(errorCode.is2xxSuccessful())));
+        if (!jsonError.isEmpty()) {
+            jsonError = jsonError.substring(jsonError.indexOf("["), jsonError.indexOf("]") + 1);
+            MambuErrorResponse[] errorResponse = MambuErrorResponse.fromJson(jsonError);
+            queryErrorResponse.setErrors(errorResponse);
+        }
+        return queryErrorResponse;
     }
 }
