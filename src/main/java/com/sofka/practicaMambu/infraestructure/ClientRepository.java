@@ -110,7 +110,7 @@ public class ClientRepository implements ClientService {
             }
             var accountInfo = command.getAccountInfo();
             accountInfo.setAccountHolderKey(clientCreateResponse.getEncodedKey());
-            var accountCreateResponse = productService.CreateAccount(accountInfo);
+            var accountCreateResponse = productService.createAccount(accountInfo);
             if (accountCreateResponse.getStatusCode().isError()) {
                 try {
                     jsonError = new ObjectMapper().writeValueAsString(accountCreateResponse.getErrors());

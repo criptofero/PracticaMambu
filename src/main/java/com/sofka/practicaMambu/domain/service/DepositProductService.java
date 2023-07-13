@@ -3,13 +3,16 @@ package com.sofka.practicaMambu.domain.service;
 import com.sofka.practicaMambu.domain.dto.*;
 import com.sofka.practicaMambu.domain.model.DepositAccount;
 import com.sofka.practicaMambu.domain.model.DepositTransaction;
+import com.sofka.practicaMambu.domain.model.TransactionFilterInfo;
 
 public interface DepositProductService {
-    DepositProductResponse GetDepositProductById(String productId);
+    DepositProductResponse getDepositProductById(String productId);
 
-    CreateDepositAccountResponse CreateAccount(DepositAccount account);
+    CreateDepositAccountResponse createAccount(DepositAccount account);
 
-    CreateDepositTransactionResponse MakeDeposit(DepositTransaction deposit, String parentAccountKey);
+    CreateDepositTransactionResponse makeDeposit(DepositTransaction deposit, String parentAccountKey);
 
-    CreateDepositTransactionResponse MakeWithdrawal(DepositTransaction withdrawal, String parentAccountKey);
+    CreateDepositTransactionResponse makeWithdrawal(DepositTransaction withdrawal, String parentAccountKey);
+
+    TransactionsQueryResponse getAccountTransactions(TransactionFilterInfo transactionFilterInfo);
 }

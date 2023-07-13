@@ -6,6 +6,7 @@ import com.sofka.practicaMambu.domain.dto.*;
 import com.sofka.practicaMambu.domain.model.DepositAccount;
 import com.sofka.practicaMambu.domain.model.DepositTransaction;
 import com.sofka.practicaMambu.domain.model.TransactionDetail;
+import com.sofka.practicaMambu.domain.model.TransactionFilterInfo;
 import com.sofka.practicaMambu.domain.seedWork.MambuAPIHelper;
 import com.sofka.practicaMambu.domain.service.DepositProductService;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,7 +36,7 @@ public class DepositProductRepository implements DepositProductService {
     private String mambuAPIPassword;
 
     @Override
-    public DepositProductResponse GetDepositProductById(String productId) {
+    public DepositProductResponse getDepositProductById(String productId) {
         DepositProductResponse productResponse = new DepositProductResponse();
         String operationUrl = mambuAPIRootUrl.concat("/depositproducts/{productId}?offset=0&limit=1&paginationDetails=OFF&detailsLevel=FULL");
         ObjectMapper mapper = new ObjectMapper();
@@ -57,14 +58,14 @@ public class DepositProductRepository implements DepositProductService {
     }
 
     @Override
-    public CreateDepositAccountResponse CreateAccount(DepositAccount account) {
+    public CreateDepositAccountResponse createAccount(DepositAccount account) {
         CreateDepositAccountResponse createResponse = new CreateDepositAccountResponse();
         String operationUrl = mambuAPIRootUrl.concat("/deposits");
         ObjectMapper mapper = new ObjectMapper();
         ResponseEntity<CreateDepositAccountResponse> responseResult = null;
         String jsonBody;
         try {
-            var productInfo = GetDepositProductById(DEPOSIT_ACCOUNT_PRODUCT_ID);
+            var productInfo = getDepositProductById(DEPOSIT_ACCOUNT_PRODUCT_ID);
             account.setProductTypeKey(productInfo.getEncodedKey());
             account.setAccountType(productInfo.getType());
             account.setAccountHolderType(DEPOSIT_ACCOUNT_DEFAULT_HOLDER_TYPE);
@@ -113,7 +114,7 @@ public class DepositProductRepository implements DepositProductService {
     }
 
     @Override
-    public CreateDepositTransactionResponse MakeDeposit(DepositTransaction deposit, String parentAccountKey) {
+    public CreateDepositTransactionResponse makeDeposit(DepositTransaction deposit, String parentAccountKey) {
         CreateDepositTransactionResponse createDepositResponse = new CreateDepositTransactionResponse();
         String operationUrl = mambuAPIRootUrl.concat("/deposits/%s/deposit-transactions".formatted(parentAccountKey));
         ObjectMapper mapper = new ObjectMapper();
@@ -137,27 +138,7 @@ public class DepositProductRepository implements DepositProductService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } catch (RestClientException e) {
-            System.err.println(e.toString());
-            createDepositResponse = new CreateDepositTransactionResponse();
-            String jsonError = e instanceof HttpStatusCodeException ?
-                    ((HttpStatusCodeException) e).getResponseBodyAsString()
-                    : "";
-            var errorCode = ((HttpStatusCodeException) e).getStatusCode();
-            createDepositResponse.setStatusCode(errorCode);
-            System.err.println("errorCode: %s".formatted(errorCode.toString()));
-            System.err.println("value: %s".formatted(String.valueOf(errorCode.value())));
-            System.err.println("isError: %s".formatted(String.valueOf(errorCode.isError())));
-            System.err.println("is4xxClientError: %s".formatted(String.valueOf(errorCode.is4xxClientError())));
-            System.err.println("is2xxSuccessful: %s".formatted(String.valueOf(errorCode.is2xxSuccessful())));
-            if (!jsonError.isEmpty()) {
-                try {
-                    jsonError = jsonError.substring(jsonError.indexOf("["), jsonError.indexOf("]") + 1);
-                    MambuErrorResponse[] errorResponse = new ObjectMapper().readValue(jsonError, MambuErrorResponse[].class);
-                    createDepositResponse.setErrors(errorResponse);
-                } catch (JsonProcessingException ex) {
-
-                }
-            }
+            createDepositResponse = handleErrorResponse(e);
         } catch (Exception e) {
             System.err.println(e.toString());
             throw new RuntimeException(e);
@@ -166,7 +147,7 @@ public class DepositProductRepository implements DepositProductService {
     }
 
     @Override
-    public CreateDepositTransactionResponse MakeWithdrawal(DepositTransaction withdrawal, String parentAccountKey) {
+    public CreateDepositTransactionResponse makeWithdrawal(DepositTransaction withdrawal, String parentAccountKey) {
         CreateDepositTransactionResponse createWithdrawalResponse = new CreateDepositTransactionResponse();
         String operationUrl = mambuAPIRootUrl.concat("/deposits/%s/withdrawal-transactions".formatted(parentAccountKey));
         ObjectMapper mapper = new ObjectMapper();
@@ -190,31 +171,56 @@ public class DepositProductRepository implements DepositProductService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } catch (RestClientException e) {
-            System.err.println(e.toString());
-            createWithdrawalResponse = new CreateDepositTransactionResponse();
-            String jsonError = e instanceof HttpStatusCodeException ?
-                    ((HttpStatusCodeException) e).getResponseBodyAsString()
-                    : "";
-            var errorCode = ((HttpStatusCodeException) e).getStatusCode();
-            createWithdrawalResponse.setStatusCode(errorCode);
-            System.err.println("errorCode: %s".formatted(errorCode.toString()));
-            System.err.println("value: %s".formatted(String.valueOf(errorCode.value())));
-            System.err.println("isError: %s".formatted(String.valueOf(errorCode.isError())));
-            System.err.println("is4xxClientError: %s".formatted(String.valueOf(errorCode.is4xxClientError())));
-            System.err.println("is2xxSuccessful: %s".formatted(String.valueOf(errorCode.is2xxSuccessful())));
-            if (!jsonError.isEmpty()) {
-                try {
-                    jsonError = jsonError.substring(jsonError.indexOf("["), jsonError.indexOf("]") + 1);
-                    MambuErrorResponse[] errorResponse = new ObjectMapper().readValue(jsonError, MambuErrorResponse[].class);
-                    createWithdrawalResponse.setErrors(errorResponse);
-                } catch (JsonProcessingException ex) {
-
-                }
-            }
+            createWithdrawalResponse = handleErrorResponse(e);
         } catch (Exception e) {
             System.err.println(e.toString());
             throw new RuntimeException(e);
         }
         return createWithdrawalResponse;
+    }
+
+    private static CreateDepositTransactionResponse handleErrorResponse(RestClientException e) {
+        CreateDepositTransactionResponse createWithdrawalResponse;
+        System.err.println(e.toString());
+        createWithdrawalResponse = new CreateDepositTransactionResponse();
+        String jsonError = e instanceof HttpStatusCodeException ?
+                ((HttpStatusCodeException) e).getResponseBodyAsString()
+                : "";
+        var errorCode = ((HttpStatusCodeException) e).getStatusCode();
+        createWithdrawalResponse.setStatusCode(errorCode);
+        System.err.println("errorCode: %s".formatted(errorCode.toString()));
+        System.err.println("value: %s".formatted(String.valueOf(errorCode.value())));
+        System.err.println("isError: %s".formatted(String.valueOf(errorCode.isError())));
+        System.err.println("is4xxClientError: %s".formatted(String.valueOf(errorCode.is4xxClientError())));
+        System.err.println("is2xxSuccessful: %s".formatted(String.valueOf(errorCode.is2xxSuccessful())));
+        if (!jsonError.isEmpty()) {
+            jsonError = jsonError.substring(jsonError.indexOf("["), jsonError.indexOf("]") + 1);
+            MambuErrorResponse[] errorResponse = MambuErrorResponse.fromJson(jsonError);
+            createWithdrawalResponse.setErrors(errorResponse);
+        }
+        return createWithdrawalResponse;
+    }
+
+    @Override
+    public TransactionsQueryResponse getAccountTransactions(TransactionFilterInfo transactionFilterInfo) {
+        TransactionsQueryResponse queryResponse = null;
+        final int ROWS_LIMIT = 20;
+        String operationUrl = mambuAPIRootUrl.concat("/deposits/transactions:search?limit=%d".formatted(ROWS_LIMIT));
+        ObjectMapper mapper = new ObjectMapper();
+        ResponseEntity<DepositTransaction[]> responseResult = null;
+        try {
+            HttpHeaders requestHeaders = new HttpHeaders();
+            requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
+            MambuAPIHelper.addAcceptHeader(requestHeaders);
+            HttpEntity<TransactionFilterInfo> httpEntity = new HttpEntity<>(transactionFilterInfo, requestHeaders);
+            RestTemplate restTemplate = new RestTemplate();
+            responseResult = restTemplate.exchange(operationUrl, HttpMethod.POST, httpEntity, DepositTransaction[].class);
+            queryResponse = new TransactionsQueryResponse();
+            queryResponse.setTransactions(responseResult.getBody());
+        } catch (Exception e) {
+            System.err.println(e.toString());
+            throw new RuntimeException(e);
+        }
+        return queryResponse;
     }
 }
