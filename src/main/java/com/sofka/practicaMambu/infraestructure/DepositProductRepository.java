@@ -7,6 +7,8 @@ import com.sofka.practicaMambu.domain.model.DepositAccount;
 import com.sofka.practicaMambu.domain.model.DepositTransaction;
 import com.sofka.practicaMambu.domain.model.TransactionDetail;
 import com.sofka.practicaMambu.domain.model.TransactionFilterInfo;
+import com.sofka.practicaMambu.domain.model.query.MambuQueryFilter;
+import com.sofka.practicaMambu.domain.model.query.MambuSortingCriteria;
 import com.sofka.practicaMambu.domain.seedWork.MambuAPIHelper;
 import com.sofka.practicaMambu.domain.service.DepositProductService;
 import org.springframework.beans.factory.annotation.Value;
@@ -120,6 +122,7 @@ public class DepositProductRepository implements DepositProductService {
         ObjectMapper mapper = new ObjectMapper();
         ResponseEntity<CreateDepositTransactionResponse> responseResult = null;
         String jsonBody;
+        var accountInfo = getAccountById(parentAccountKey);
         try {
             var transactionDetails = new TransactionDetail();
             transactionDetails.setTransactionChannelId(DEPOSIT_ACCOUNT_DEFAULT_TRAN_CHANNEL);
@@ -225,6 +228,32 @@ public class DepositProductRepository implements DepositProductService {
             throw new RuntimeException(e);
         }
         return queryResponse;
+    }
+
+    @Override
+    public DepositAccount getAccountById(String accountKey) {
+        DepositAccount account = null;
+        String operationUrl = mambuAPIRootUrl.concat("/deposits:search");
+        TransactionFilterInfo filterInfo = new TransactionFilterInfo();
+        MambuQueryFilter queryFilter = new MambuQueryFilter();
+        queryFilter.setField("encodedKey");
+        queryFilter.setOperator("EQUALS");
+        queryFilter.setValue(accountKey);
+        MambuSortingCriteria sortingCriteria = new MambuSortingCriteria();
+        sortingCriteria.setField("encodedKey");
+        sortingCriteria.setOrder("ASC");
+        filterInfo.setFilterCriteria(new MambuQueryFilter[]{queryFilter});
+        filterInfo.setSortingCriteria(sortingCriteria);
+        HttpHeaders requestHeaders = new HttpHeaders();
+        requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
+        MambuAPIHelper.addAcceptHeader(requestHeaders);
+        HttpEntity<TransactionFilterInfo> httpEntity = new HttpEntity<>(filterInfo, requestHeaders);
+        RestTemplate restTemplate = new RestTemplate();
+        var accountQueryResponse = restTemplate.exchange(operationUrl, HttpMethod.POST, httpEntity, DepositAccount[].class);
+        if (accountQueryResponse.getBody() != null && accountQueryResponse.getBody().length > 0) {
+            account = accountQueryResponse.getBody()[0];
+        }
+        return account;
     }
 
     private TransactionsQueryResponse handleQueryErrorResponse(RestClientException e) {

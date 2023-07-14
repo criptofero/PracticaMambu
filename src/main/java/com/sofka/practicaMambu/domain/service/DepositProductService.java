@@ -15,4 +15,6 @@ public interface DepositProductService {
     CreateDepositTransactionResponse makeWithdrawal(DepositTransaction withdrawal, String parentAccountKey);
 
     TransactionsQueryResponse getAccountTransactions(TransactionFilterInfo transactionFilterInfo);
+
+    DepositAccount getAccountById(String accountKey);
 }
