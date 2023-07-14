@@ -256,6 +256,11 @@ public class DepositProductRepository implements DepositProductService {
         return account;
     }
 
+    @Override
+    public ApplySeizureResponse applyAccountBalanceBlockAndSeizure(DepositBalanceBlockCommand blockCommand) {
+        return null;
+    }
+
     private TransactionsQueryResponse handleQueryErrorResponse(RestClientException e) {
         TransactionsQueryResponse queryErrorResponse = null;
         System.err.println(e.toString());
