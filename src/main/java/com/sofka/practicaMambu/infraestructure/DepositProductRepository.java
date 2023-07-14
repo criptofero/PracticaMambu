@@ -20,6 +20,8 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.UUID;
+
 public class DepositProductRepository implements DepositProductService {
 
     public static final String DEPOSIT_ACCOUNT_PRODUCT_ID = "1099003";
@@ -27,6 +29,7 @@ public class DepositProductRepository implements DepositProductService {
     public static final String DEPOSIT_ACCOUNT_DEFAULT_STATE = "APPROVED";
     public static final String DEPOSIT_ACCOUNT_DEFAULT_CURRENCY = "COP";
     public static final String DEPOSIT_ACCOUNT_DEFAULT_TRAN_CHANNEL = "OnlineChannelLocales";
+    public static final String DEPOSIT_ACCOUNT_SEIZURE_DEFAULT_TRAN_CHANNEL = "cash";
 
     @Value("${mambuAPI.rootUrl}")
     private String mambuAPIRootUrl;
@@ -257,8 +260,67 @@ public class DepositProductRepository implements DepositProductService {
     }
 
     @Override
-    public ApplySeizureResponse applyAccountBalanceBlockAndSeizure(DepositBalanceBlockCommand blockCommand) {
-        return null;
+    public CreateBalanceBlockResponse blockAccountBalance(DepositBalanceBlockCommand blockCommand, String accountKey) {
+        CreateBalanceBlockResponse blockResponse = null;
+        String operationUrl = mambuAPIRootUrl.concat("/deposits/{accountKey}/blocks");
+        String jsonBody;
+        ObjectMapper mapper = new ObjectMapper();
+        ResponseEntity<CreateBalanceBlockResponse> responseResult = null;
+        try {
+            jsonBody = mapper.writeValueAsString(blockCommand);
+            HttpHeaders requestHeaders = new HttpHeaders();
+            requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
+            MambuAPIHelper.addAcceptHeader(requestHeaders);
+            MambuAPIHelper.addContentHeader(requestHeaders);
+            MambuAPIHelper.addIdempotencyHeader(requestHeaders, jsonBody);
+            HttpEntity<DepositBalanceBlockCommand> httpEntity = new HttpEntity<>(blockCommand, requestHeaders);
+            RestTemplate restTemplate = new RestTemplate();
+            responseResult = restTemplate.postForEntity(operationUrl, httpEntity, CreateBalanceBlockResponse.class, accountKey);
+            blockResponse = responseResult.getBody();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        } catch (Exception e) {
+            System.err.println(e.toString());
+            throw new RuntimeException(e);
+        }
+        return blockResponse;
+    }
+
+    @Override
+    public ApplySeizureResponse applyAccountBalanceBlockAndSeizure(DepositBalanceBlockCommand blockCommand, String accountKey) {
+        ApplySeizureResponse seizureResponse = null;
+        String operationUrl = mambuAPIRootUrl.concat("/deposits/{accountKey}/seizure-transactions");
+        var blockResponse = blockAccountBalance(blockCommand, accountKey);
+        if (blockResponse != null) {
+            CreateSeizureCommand createSeizureCommand = new CreateSeizureCommand();
+            createSeizureCommand.setAmount(blockCommand.getAmount());
+            createSeizureCommand.setBlockId(blockResponse.getExternalReferenceId());
+            createSeizureCommand.setExternalId(UUID.randomUUID().toString());
+            createSeizureCommand.setNotes("Prueba Embargo Cuenta %s desde backend Sofka".formatted(accountKey));
+            createSeizureCommand.setTransactionChannelId(DEPOSIT_ACCOUNT_SEIZURE_DEFAULT_TRAN_CHANNEL);
+            String jsonBody;
+            ObjectMapper mapper = new ObjectMapper();
+            ResponseEntity<ApplySeizureResponse> responseResult = null;
+            try {
+                jsonBody = mapper.writeValueAsString(blockCommand);
+                HttpHeaders requestHeaders = new HttpHeaders();
+                requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
+                MambuAPIHelper.addAcceptHeader(requestHeaders);
+                MambuAPIHelper.addContentHeader(requestHeaders);
+                MambuAPIHelper.addIdempotencyHeader(requestHeaders, jsonBody);
+                HttpEntity<CreateSeizureCommand> httpEntity = new HttpEntity<>(createSeizureCommand, requestHeaders);
+                RestTemplate restTemplate = new RestTemplate();
+                //TODO: handle Response API error
+                responseResult = restTemplate.postForEntity(operationUrl, httpEntity, ApplySeizureResponse.class, accountKey);
+                seizureResponse = responseResult.getBody();
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            } catch (Exception e) {
+                System.err.println(e.toString());
+                throw new RuntimeException(e);
+            }
+        }
+        return seizureResponse;
     }
 
     private TransactionsQueryResponse handleQueryErrorResponse(RestClientException e) {

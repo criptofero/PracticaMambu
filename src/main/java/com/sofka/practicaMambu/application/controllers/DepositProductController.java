@@ -86,4 +86,11 @@ public class DepositProductController {
         }
         return responseEntity;
     }
+
+    @PostMapping("/accounts/{accountKey}/seizure-transactions")
+    public ResponseEntity<ApplySeizureResponse> applyAccountBalanceBlockAndSeizure(@RequestBody DepositBalanceBlockCommand blockCommand, @PathVariable String accountKey) {
+        ApplySeizureResponse transactionResponse = productService.applyAccountBalanceBlockAndSeizure(blockCommand, accountKey);
+        ResponseEntity responseEntity = new ResponseEntity(transactionResponse, HttpStatus.OK);
+        return responseEntity;
+    }
 }
