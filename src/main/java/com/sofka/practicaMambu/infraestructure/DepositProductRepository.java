@@ -12,10 +12,7 @@ import com.sofka.practicaMambu.domain.model.query.MambuSortingCriteria;
 import com.sofka.practicaMambu.domain.seedWork.MambuAPIHelper;
 import com.sofka.practicaMambu.domain.service.DepositProductService;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -125,7 +122,6 @@ public class DepositProductRepository implements DepositProductService {
         ObjectMapper mapper = new ObjectMapper();
         ResponseEntity<CreateDepositTransactionResponse> responseResult = null;
         String jsonBody;
-        var accountInfo = getAccountById(parentAccountKey);
         try {
             var transactionDetails = new TransactionDetail();
             transactionDetails.setTransactionChannelId(DEPOSIT_ACCOUNT_DEFAULT_TRAN_CHANNEL);
@@ -144,7 +140,7 @@ public class DepositProductRepository implements DepositProductService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } catch (RestClientException e) {
-            createDepositResponse = handleErrorResponse(e);
+            createDepositResponse = handleDepositTransactionErrorResponse(e);
         } catch (Exception e) {
             System.err.println(e.toString());
             throw new RuntimeException(e);
@@ -177,32 +173,10 @@ public class DepositProductRepository implements DepositProductService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } catch (RestClientException e) {
-            createWithdrawalResponse = handleErrorResponse(e);
+            createWithdrawalResponse = handleDepositTransactionErrorResponse(e);
         } catch (Exception e) {
             System.err.println(e.toString());
             throw new RuntimeException(e);
-        }
-        return createWithdrawalResponse;
-    }
-
-    private static CreateDepositTransactionResponse handleErrorResponse(RestClientException e) {
-        CreateDepositTransactionResponse createWithdrawalResponse;
-        System.err.println(e.toString());
-        createWithdrawalResponse = new CreateDepositTransactionResponse();
-        String jsonError = e instanceof HttpStatusCodeException ?
-                ((HttpStatusCodeException) e).getResponseBodyAsString()
-                : "";
-        var errorCode = ((HttpStatusCodeException) e).getStatusCode();
-        createWithdrawalResponse.setStatusCode(errorCode);
-        System.err.println("errorCode: %s".formatted(errorCode.toString()));
-        System.err.println("value: %s".formatted(String.valueOf(errorCode.value())));
-        System.err.println("isError: %s".formatted(String.valueOf(errorCode.isError())));
-        System.err.println("is4xxClientError: %s".formatted(String.valueOf(errorCode.is4xxClientError())));
-        System.err.println("is2xxSuccessful: %s".formatted(String.valueOf(errorCode.is2xxSuccessful())));
-        if (!jsonError.isEmpty()) {
-            jsonError = jsonError.substring(jsonError.indexOf("["), jsonError.indexOf("]") + 1);
-            MambuErrorResponse[] errorResponse = MambuErrorResponse.fromJson(jsonError);
-            createWithdrawalResponse.setErrors(errorResponse);
         }
         return createWithdrawalResponse;
     }
@@ -292,56 +266,95 @@ public class DepositProductRepository implements DepositProductService {
         String operationUrl = mambuAPIRootUrl.concat("/deposits/{accountKey}/seizure-transactions");
         var blockResponse = blockAccountBalance(blockCommand, accountKey);
         if (blockResponse != null) {
-            CreateSeizureCommand createSeizureCommand = new CreateSeizureCommand();
-            createSeizureCommand.setAmount(blockCommand.getAmount());
-            createSeizureCommand.setBlockId(blockResponse.getExternalReferenceId());
-            createSeizureCommand.setExternalId(UUID.randomUUID().toString());
-            createSeizureCommand.setNotes("Prueba Embargo Cuenta %s desde backend Sofka".formatted(accountKey));
-            createSeizureCommand.setTransactionChannelId(DEPOSIT_ACCOUNT_SEIZURE_DEFAULT_TRAN_CHANNEL);
-            String jsonBody;
-            ObjectMapper mapper = new ObjectMapper();
-            ResponseEntity<ApplySeizureResponse> responseResult = null;
-            try {
-                jsonBody = mapper.writeValueAsString(blockCommand);
-                HttpHeaders requestHeaders = new HttpHeaders();
-                requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
-                MambuAPIHelper.addAcceptHeader(requestHeaders);
-                MambuAPIHelper.addContentHeader(requestHeaders);
-                MambuAPIHelper.addIdempotencyHeader(requestHeaders, jsonBody);
-                HttpEntity<CreateSeizureCommand> httpEntity = new HttpEntity<>(createSeizureCommand, requestHeaders);
-                RestTemplate restTemplate = new RestTemplate();
-                //TODO: handle Response API error
-                responseResult = restTemplate.postForEntity(operationUrl, httpEntity, ApplySeizureResponse.class, accountKey);
-                seizureResponse = responseResult.getBody();
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            } catch (Exception e) {
-                System.err.println(e.toString());
-                throw new RuntimeException(e);
+            var accountInfo = getAccountById(accountKey);
+            if (accountInfo != null && accountInfo.getAccountState().equalsIgnoreCase("LOCKED")) {
+                seizureResponse = new ApplySeizureResponse();
+                var errorResponse = new MambuErrorResponse();
+                errorResponse.setErrorCode(1103);
+                errorResponse.setErrorReason("No es posible aplicar embargo porque la cuenta se encuentra bloqueada");
+                seizureResponse.setErrors(new MambuErrorResponse[]{errorResponse});
+                seizureResponse.setStatusCode(HttpStatus.FORBIDDEN);
+            } else {
+                CreateSeizureCommand createSeizureCommand = new CreateSeizureCommand();
+                createSeizureCommand.setAmount(blockCommand.getAmount());
+                createSeizureCommand.setBlockId(blockResponse.getExternalReferenceId());
+                createSeizureCommand.setExternalId(UUID.randomUUID().toString());
+                createSeizureCommand.setNotes("Prueba Embargo Cuenta %s desde backend Sofka".formatted(accountKey));
+                createSeizureCommand.setTransactionChannelId(DEPOSIT_ACCOUNT_SEIZURE_DEFAULT_TRAN_CHANNEL);
+                String jsonBody;
+                ObjectMapper mapper = new ObjectMapper();
+                ResponseEntity<ApplySeizureResponse> responseResult = null;
+                try {
+                    jsonBody = mapper.writeValueAsString(blockCommand);
+                    HttpHeaders requestHeaders = new HttpHeaders();
+                    requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
+                    MambuAPIHelper.addAcceptHeader(requestHeaders);
+                    MambuAPIHelper.addContentHeader(requestHeaders);
+                    MambuAPIHelper.addIdempotencyHeader(requestHeaders, jsonBody);
+                    HttpEntity<CreateSeizureCommand> httpEntity = new HttpEntity<>(createSeizureCommand, requestHeaders);
+                    RestTemplate restTemplate = new RestTemplate();
+                    responseResult = restTemplate.postForEntity(operationUrl, httpEntity, ApplySeizureResponse.class, accountKey);
+                    seizureResponse = responseResult.getBody();
+                } catch (RestClientException e) {
+                    seizureResponse = handleApplySeizureErrorResponse(e);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                } catch (Exception e) {
+                    System.err.println(e.toString());
+                    throw new RuntimeException(e);
+                }
             }
         }
         return seizureResponse;
     }
 
+    private static CreateDepositTransactionResponse handleDepositTransactionErrorResponse(RestClientException e) {
+        CreateDepositTransactionResponse createTransactionResponse = new CreateDepositTransactionResponse();
+        HttpStatusCode errorCode = getHttpStatusCode(e);
+        MambuErrorResponse[] errorResponse = getMambuErrorResponses(e);
+        createTransactionResponse.setStatusCode(errorCode);
+        createTransactionResponse.setErrors(errorResponse);
+        return createTransactionResponse;
+    }
+
     private TransactionsQueryResponse handleQueryErrorResponse(RestClientException e) {
-        TransactionsQueryResponse queryErrorResponse = null;
-        System.err.println(e.toString());
-        queryErrorResponse = new TransactionsQueryResponse();
-        String jsonError = e instanceof HttpStatusCodeException ?
-                ((HttpStatusCodeException) e).getResponseBodyAsString()
-                : "";
-        var errorCode = ((HttpStatusCodeException) e).getStatusCode();
+        TransactionsQueryResponse queryErrorResponse = new TransactionsQueryResponse();
+        HttpStatusCode errorCode = getHttpStatusCode(e);
+        MambuErrorResponse[] errorResponse = getMambuErrorResponses(e);
         queryErrorResponse.setStatusCode(errorCode);
+        queryErrorResponse.setErrors(errorResponse);
+        return queryErrorResponse;
+    }
+
+    private ApplySeizureResponse handleApplySeizureErrorResponse(RestClientException e) {
+        ApplySeizureResponse applySeizureErrorResponse = new ApplySeizureResponse();
+        HttpStatusCode errorCode = getHttpStatusCode(e);
+        MambuErrorResponse[] errorResponse = getMambuErrorResponses(e);
+        applySeizureErrorResponse.setStatusCode(errorCode);
+        applySeizureErrorResponse.setErrors(errorResponse);
+        return applySeizureErrorResponse;
+    }
+
+    private static HttpStatusCode getHttpStatusCode(RestClientException e) {
+        var errorCode = ((HttpStatusCodeException) e).getStatusCode();
+        System.err.println(e);
         System.err.println("errorCode: %s".formatted(errorCode.toString()));
         System.err.println("value: %s".formatted(String.valueOf(errorCode.value())));
         System.err.println("isError: %s".formatted(String.valueOf(errorCode.isError())));
         System.err.println("is4xxClientError: %s".formatted(String.valueOf(errorCode.is4xxClientError())));
         System.err.println("is2xxSuccessful: %s".formatted(String.valueOf(errorCode.is2xxSuccessful())));
+        return errorCode;
+    }
+
+    private static MambuErrorResponse[] getMambuErrorResponses(RestClientException e) {
+        MambuErrorResponse[] errorResponse = null;
+        String jsonError = e instanceof HttpStatusCodeException ?
+                ((HttpStatusCodeException) e).getResponseBodyAsString()
+                : "";
         if (!jsonError.isEmpty()) {
             jsonError = jsonError.substring(jsonError.indexOf("["), jsonError.indexOf("]") + 1);
-            MambuErrorResponse[] errorResponse = MambuErrorResponse.fromJson(jsonError);
-            queryErrorResponse.setErrors(errorResponse);
+            errorResponse = MambuErrorResponse.fromJson(jsonError);
         }
-        return queryErrorResponse;
+        return errorResponse;
     }
 }
