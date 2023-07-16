@@ -308,6 +308,39 @@ public class DepositProductRepository implements DepositProductService {
         return seizureResponse;
     }
 
+    @Override
+    public LockAccountResponse lockAccount(String lockNotes, String accountKey) {
+        LockAccountResponse lockAccountResponse = null;
+        final String LOCK_ACTION = "LOCK";
+        String operationUrl = mambuAPIRootUrl.concat("/deposits/{accountKey}:changeState");
+        var lockAccountCommand = new LockAccountCommand();
+        lockAccountCommand.setAction(LOCK_ACTION);
+        lockAccountCommand.setNotes(lockNotes);
+        String jsonBody;
+        ObjectMapper mapper = new ObjectMapper();
+        ResponseEntity<LockAccountResponse> responseResult = null;
+        try {
+            jsonBody = mapper.writeValueAsString(lockAccountCommand);
+            HttpHeaders requestHeaders = new HttpHeaders();
+            requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
+            MambuAPIHelper.addAcceptHeader(requestHeaders);
+            MambuAPIHelper.addIdempotencyHeader(requestHeaders, jsonBody);
+            HttpEntity<LockAccountCommand> httpEntity = new HttpEntity<>(lockAccountCommand, requestHeaders);
+            RestTemplate restTemplate = new RestTemplate();
+            responseResult = restTemplate.postForEntity(operationUrl, httpEntity, LockAccountResponse.class, accountKey);
+            lockAccountResponse = responseResult.getBody();
+        } catch (RestClientException e) {
+            //TODO: Implement error handler
+            //lockAccountResponse = handleLockAccountErrorResponse(e);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        } catch (Exception e) {
+            System.err.println(e.toString());
+            throw new RuntimeException(e);
+        }
+        return lockAccountResponse;
+    }
+
     private static CreateDepositTransactionResponse handleDepositTransactionErrorResponse(RestClientException e) {
         CreateDepositTransactionResponse createTransactionResponse = new CreateDepositTransactionResponse();
         HttpStatusCode errorCode = getHttpStatusCode(e);

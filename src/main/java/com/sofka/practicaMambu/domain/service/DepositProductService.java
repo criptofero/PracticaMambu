@@ -21,4 +21,6 @@ public interface DepositProductService {
     CreateBalanceBlockResponse blockAccountBalance(DepositBalanceBlockCommand blockCommand, String accountKey);
 
     ApplySeizureResponse applyAccountBalanceBlockAndSeizure(DepositBalanceBlockCommand blockCommand, String accountKey);
+
+    LockAccountResponse lockAccount(String lockNotes, String accountKey);
 }

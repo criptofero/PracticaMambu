@@ -93,4 +93,11 @@ public class DepositProductController {
         ResponseEntity responseEntity = new ResponseEntity(transactionResponse, HttpStatus.OK);
         return responseEntity;
     }
+
+    @PostMapping("/accounts/{accountKey}/locks")
+    public ResponseEntity<LockAccountResponse> lockAccount(@RequestBody String notes, @PathVariable String accountKey) {
+        LockAccountResponse lockAccountResponse = productService.lockAccount(notes, accountKey);
+        ResponseEntity responseEntity = new ResponseEntity(lockAccountResponse, HttpStatus.OK);
+        return responseEntity;
+    }
 }
