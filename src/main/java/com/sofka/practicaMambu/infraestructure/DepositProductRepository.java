@@ -355,6 +355,43 @@ public class DepositProductRepository implements DepositProductService {
         return lockAccountResponse;
     }
 
+    @Override
+    public ApplyInterestResponse applyInterest(ApplyInterestCommand applyInterestCommand, String accountKey) {
+        ApplyInterestResponse applyInterestResponse = null;
+        String operationUrl = mambuAPIRootUrl.concat("/deposits/{accountKey}:applyInterest");
+        String jsonBody;
+        ObjectMapper mapper = new ObjectMapper();
+        ResponseEntity<ApplyInterestResponse> responseResult = null;
+        try {
+            jsonBody = mapper.writeValueAsString(applyInterestCommand);
+            HttpHeaders requestHeaders = new HttpHeaders();
+            requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
+            MambuAPIHelper.addAcceptHeader(requestHeaders);
+            MambuAPIHelper.addIdempotencyHeader(requestHeaders, jsonBody);
+            HttpEntity<ApplyInterestCommand> httpEntity = new HttpEntity<>(applyInterestCommand, requestHeaders);
+            RestTemplate restTemplate = new RestTemplate();
+            responseResult = restTemplate.postForEntity(operationUrl, httpEntity, ApplyInterestResponse.class, accountKey);
+            applyInterestResponse = responseResult.getBody();
+        } catch (RestClientException e) {
+            applyInterestResponse = handleApplyInterestErrorResponse(e);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        } catch (Exception e) {
+            System.err.println(e.toString());
+            throw new RuntimeException(e);
+        }
+        return applyInterestResponse;
+    }
+
+    private ApplyInterestResponse handleApplyInterestErrorResponse(RestClientException e) {
+        ApplyInterestResponse applyInterestResponse = new ApplyInterestResponse();
+        HttpStatusCode errorCode = getHttpStatusCode(e);
+        MambuErrorResponse[] errorResponse = getMambuErrorResponses(e);
+        applyInterestResponse.setStatusCode(errorCode);
+        applyInterestResponse.setErrors(errorResponse);
+        return applyInterestResponse;
+    }
+
     private static CreateDepositTransactionResponse handleDepositTransactionErrorResponse(RestClientException e) {
         CreateDepositTransactionResponse createTransactionResponse = new CreateDepositTransactionResponse();
         HttpStatusCode errorCode = getHttpStatusCode(e);

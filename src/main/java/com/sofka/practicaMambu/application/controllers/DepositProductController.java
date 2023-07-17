@@ -100,4 +100,12 @@ public class DepositProductController {
         ResponseEntity responseEntity = new ResponseEntity(lockAccountResponse, lockAccountResponse.getStatusCode());
         return responseEntity;
     }
+
+    @PostMapping("/accounts/{accountKey}/interests")
+    public ResponseEntity<ApplyInterestResponse> applyInterest(@RequestBody ApplyInterestCommand applyInterestCommand, @PathVariable String accountKey) {
+        applyInterestCommand.setPaymentHolidaysInterest(true);
+        ApplyInterestResponse applyInterestResponse = productService.applyInterest(applyInterestCommand, accountKey);
+        ResponseEntity responseEntity = new ResponseEntity(applyInterestResponse, applyInterestResponse.getStatusCode());
+        return responseEntity;
+    }
 }
