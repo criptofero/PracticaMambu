@@ -251,6 +251,8 @@ public class DepositProductRepository implements DepositProductService {
             RestTemplate restTemplate = new RestTemplate();
             responseResult = restTemplate.postForEntity(operationUrl, httpEntity, CreateBalanceBlockResponse.class, accountKey);
             blockResponse = responseResult.getBody();
+        } catch (RestClientException e) {
+            blockResponse = handleBlockAccountBalanceErrorResponse(e);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } catch (Exception e) {
@@ -263,46 +265,59 @@ public class DepositProductRepository implements DepositProductService {
     @Override
     public ApplySeizureResponse applyAccountBalanceBlockAndSeizure(DepositBalanceBlockCommand blockCommand, String accountKey) {
         ApplySeizureResponse seizureResponse = null;
-        String operationUrl = mambuAPIRootUrl.concat("/deposits/{accountKey}/seizure-transactions");
         var blockResponse = blockAccountBalance(blockCommand, accountKey);
         if (blockResponse != null) {
-            var accountInfo = getAccountById(accountKey);
-            if (accountInfo != null && accountInfo.getAccountState().equalsIgnoreCase("LOCKED")) {
+            if (blockResponse.getErrors() != null) {
                 seizureResponse = new ApplySeizureResponse();
-                var errorResponse = new MambuErrorResponse();
-                errorResponse.setErrorCode(1103);
-                errorResponse.setErrorReason("No es posible aplicar embargo porque la cuenta se encuentra bloqueada");
-                seizureResponse.setErrors(new MambuErrorResponse[]{errorResponse});
-                seizureResponse.setStatusCode(HttpStatus.FORBIDDEN);
+                seizureResponse.setErrors(blockResponse.getErrors());
+                seizureResponse.setStatusCode(blockResponse.getStatusCode());
             } else {
-                CreateSeizureCommand createSeizureCommand = new CreateSeizureCommand();
-                createSeizureCommand.setAmount(blockCommand.getAmount());
-                createSeizureCommand.setBlockId(blockResponse.getExternalReferenceId());
-                createSeizureCommand.setExternalId(UUID.randomUUID().toString());
-                createSeizureCommand.setNotes("Prueba Embargo Cuenta %s desde backend Sofka".formatted(accountKey));
-                createSeizureCommand.setTransactionChannelId(DEPOSIT_ACCOUNT_SEIZURE_DEFAULT_TRAN_CHANNEL);
-                String jsonBody;
-                ObjectMapper mapper = new ObjectMapper();
-                ResponseEntity<ApplySeizureResponse> responseResult = null;
-                try {
-                    jsonBody = mapper.writeValueAsString(blockCommand);
-                    HttpHeaders requestHeaders = new HttpHeaders();
-                    requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
-                    MambuAPIHelper.addAcceptHeader(requestHeaders);
-                    MambuAPIHelper.addContentHeader(requestHeaders);
-                    MambuAPIHelper.addIdempotencyHeader(requestHeaders, jsonBody);
-                    HttpEntity<CreateSeizureCommand> httpEntity = new HttpEntity<>(createSeizureCommand, requestHeaders);
-                    RestTemplate restTemplate = new RestTemplate();
-                    responseResult = restTemplate.postForEntity(operationUrl, httpEntity, ApplySeizureResponse.class, accountKey);
-                    seizureResponse = responseResult.getBody();
-                } catch (RestClientException e) {
-                    seizureResponse = handleApplySeizureErrorResponse(e);
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                } catch (Exception e) {
-                    System.err.println(e.toString());
-                    throw new RuntimeException(e);
-                }
+                seizureResponse = applyAccountSeizure(blockCommand, accountKey, blockResponse.getExternalReferenceId());
+            }
+        }
+        return seizureResponse;
+    }
+
+    public ApplySeizureResponse applyAccountSeizure(DepositBalanceBlockCommand blockCommand, String accountKey, String externalReferenceId) {
+        ApplySeizureResponse seizureResponse;
+        String operationUrl = mambuAPIRootUrl.concat("/deposits/{accountKey}/seizure-transactions");
+        var accountInfo = getAccountById(accountKey);
+        if (accountInfo != null && accountInfo.getAccountState().equalsIgnoreCase("LOCKED")) {
+            seizureResponse = new ApplySeizureResponse();
+            var errorResponse = new MambuErrorResponse();
+            errorResponse.setErrorCode(1103);
+            errorResponse.setErrorReason("No es posible aplicar embargo porque la cuenta se encuentra bloqueada");
+            seizureResponse.setErrors(new MambuErrorResponse[]{errorResponse});
+            seizureResponse.setStatusCode(HttpStatus.FORBIDDEN);
+        } else {
+            CreateSeizureCommand createSeizureCommand = new CreateSeizureCommand();
+            createSeizureCommand.setAmount(blockCommand.getAmount());
+            createSeizureCommand.setBlockId(externalReferenceId);
+            createSeizureCommand.setExternalId(UUID.randomUUID().toString());
+            createSeizureCommand.setNotes("Prueba Embargo Cuenta %s desde backend Sofka".formatted(accountKey));
+            createSeizureCommand.setTransactionChannelId(DEPOSIT_ACCOUNT_SEIZURE_DEFAULT_TRAN_CHANNEL);
+            String jsonBody;
+            ObjectMapper mapper = new ObjectMapper();
+            ResponseEntity<ApplySeizureResponse> responseResult = null;
+            try {
+                jsonBody = mapper.writeValueAsString(blockCommand);
+                HttpHeaders requestHeaders = new HttpHeaders();
+                requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
+                MambuAPIHelper.addAcceptHeader(requestHeaders);
+                MambuAPIHelper.addContentHeader(requestHeaders);
+                MambuAPIHelper.addIdempotencyHeader(requestHeaders, jsonBody);
+                HttpEntity<CreateSeizureCommand> httpEntity = new HttpEntity<>(createSeizureCommand, requestHeaders);
+                RestTemplate restTemplate = new RestTemplate();
+                responseResult = restTemplate.postForEntity(operationUrl, httpEntity, ApplySeizureResponse.class, accountKey);
+                seizureResponse = responseResult.getBody();
+                seizureResponse.setStatusCode(responseResult.getStatusCode());
+            } catch (RestClientException e) {
+                seizureResponse = handleApplySeizureErrorResponse(e);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            } catch (Exception e) {
+                System.err.println(e.toString());
+                throw new RuntimeException(e);
             }
         }
         return seizureResponse;
@@ -330,8 +345,7 @@ public class DepositProductRepository implements DepositProductService {
             responseResult = restTemplate.postForEntity(operationUrl, httpEntity, LockAccountResponse.class, accountKey);
             lockAccountResponse = responseResult.getBody();
         } catch (RestClientException e) {
-            //TODO: Implement error handler
-            //lockAccountResponse = handleLockAccountErrorResponse(e);
+            lockAccountResponse = handleLockAccountErrorResponse(e);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } catch (Exception e) {
@@ -359,6 +373,15 @@ public class DepositProductRepository implements DepositProductService {
         return queryErrorResponse;
     }
 
+    private static CreateBalanceBlockResponse handleBlockAccountBalanceErrorResponse(RestClientException e) {
+        CreateBalanceBlockResponse balanceBlockResponse = new CreateBalanceBlockResponse();
+        HttpStatusCode errorCode = getHttpStatusCode(e);
+        MambuErrorResponse[] errorResponse = getMambuErrorResponses(e);
+        balanceBlockResponse.setStatusCode(errorCode);
+        balanceBlockResponse.setErrors(errorResponse);
+        return balanceBlockResponse;
+    }
+
     private ApplySeizureResponse handleApplySeizureErrorResponse(RestClientException e) {
         ApplySeizureResponse applySeizureErrorResponse = new ApplySeizureResponse();
         HttpStatusCode errorCode = getHttpStatusCode(e);
@@ -366,6 +389,15 @@ public class DepositProductRepository implements DepositProductService {
         applySeizureErrorResponse.setStatusCode(errorCode);
         applySeizureErrorResponse.setErrors(errorResponse);
         return applySeizureErrorResponse;
+    }
+
+    private static LockAccountResponse handleLockAccountErrorResponse(RestClientException e) {
+        LockAccountResponse lockAccountResponse = new LockAccountResponse();
+        HttpStatusCode errorCode = getHttpStatusCode(e);
+        MambuErrorResponse[] errorResponse = getMambuErrorResponses(e);
+        lockAccountResponse.setStatusCode(errorCode);
+        lockAccountResponse.setErrors(errorResponse);
+        return lockAccountResponse;
     }
 
     private static HttpStatusCode getHttpStatusCode(RestClientException e) {

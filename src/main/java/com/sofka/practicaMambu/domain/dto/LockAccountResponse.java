@@ -1,7 +1,11 @@
 package com.sofka.practicaMambu.domain.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.sofka.practicaMambu.domain.model.AccountBalanceInfo;
+import org.springframework.http.HttpStatusCode;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class LockAccountResponse {
     private String encodedKey;
     private String id;
@@ -12,6 +16,11 @@ public class LockAccountResponse {
     private String lockedDate;
 
     private AccountBalanceInfo balances;
+
+    private MambuErrorResponse[] errors;
+
+    @JsonIgnore
+    private HttpStatusCode statusCode;
 
     public AccountBalanceInfo getBalances() {
         return balances;
@@ -75,5 +84,21 @@ public class LockAccountResponse {
 
     public void setLockedDate(String lockedDate) {
         this.lockedDate = lockedDate;
+    }
+
+    public MambuErrorResponse[] getErrors() {
+        return errors;
+    }
+
+    public void setErrors(MambuErrorResponse[] errors) {
+        this.errors = errors;
+    }
+
+    public HttpStatusCode getStatusCode() {
+        return statusCode;
+    }
+
+    public void setStatusCode(HttpStatusCode statusCode) {
+        this.statusCode = statusCode;
     }
 }

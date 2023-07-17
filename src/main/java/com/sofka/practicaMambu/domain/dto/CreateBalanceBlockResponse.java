@@ -1,14 +1,42 @@
 package com.sofka.practicaMambu.domain.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import org.springframework.http.HttpStatusCode;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CreateBalanceBlockResponse {
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private Long amount;
     private String externalReferenceId;
     private String accountkey;
     private String state;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private Long seizedAmount;
     private String creationDate;
     private String lastModifiedDate;
     private String notes;
+
+    private MambuErrorResponse[] errors;
+
+    @JsonIgnore
+    private HttpStatusCode statusCode;
+
+    public MambuErrorResponse[] getErrors() {
+        return errors;
+    }
+
+    public void setErrors(MambuErrorResponse[] errors) {
+        this.errors = errors;
+    }
+
+    public HttpStatusCode getStatusCode() {
+        return statusCode;
+    }
+
+    public void setStatusCode(HttpStatusCode statusCode) {
+        this.statusCode = statusCode;
+    }
 
     public Long getAmount() {
         return amount;

@@ -90,14 +90,14 @@ public class DepositProductController {
     @PostMapping("/accounts/{accountKey}/seizure-transactions")
     public ResponseEntity<ApplySeizureResponse> applyAccountBalanceBlockAndSeizure(@RequestBody DepositBalanceBlockCommand blockCommand, @PathVariable String accountKey) {
         ApplySeizureResponse transactionResponse = productService.applyAccountBalanceBlockAndSeizure(blockCommand, accountKey);
-        ResponseEntity responseEntity = new ResponseEntity(transactionResponse, HttpStatus.OK);
+        ResponseEntity responseEntity = new ResponseEntity(transactionResponse, transactionResponse.getStatusCode());
         return responseEntity;
     }
 
     @PostMapping("/accounts/{accountKey}/locks")
     public ResponseEntity<LockAccountResponse> lockAccount(@RequestBody String notes, @PathVariable String accountKey) {
         LockAccountResponse lockAccountResponse = productService.lockAccount(notes, accountKey);
-        ResponseEntity responseEntity = new ResponseEntity(lockAccountResponse, HttpStatus.OK);
+        ResponseEntity responseEntity = new ResponseEntity(lockAccountResponse, lockAccountResponse.getStatusCode());
         return responseEntity;
     }
 }
