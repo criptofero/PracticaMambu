@@ -27,6 +27,8 @@ public class DepositProductRepository implements DepositProductService {
     public static final String DEPOSIT_ACCOUNT_DEFAULT_CURRENCY = "COP";
     public static final String DEPOSIT_ACCOUNT_DEFAULT_TRAN_CHANNEL = "OnlineChannelLocales";
     public static final String DEPOSIT_ACCOUNT_SEIZURE_DEFAULT_TRAN_CHANNEL = "cash";
+    public static final int ROWS_LIMIT = 20;
+    public static final String LOCK_ACTION = "LOCK";
 
     @Value("${mambuAPI.rootUrl}")
     private String mambuAPIRootUrl;
@@ -41,9 +43,7 @@ public class DepositProductRepository implements DepositProductService {
     public DepositProductResponse getDepositProductById(String productId) {
         DepositProductResponse productResponse = new DepositProductResponse();
         String operationUrl = mambuAPIRootUrl.concat("/depositproducts/{productId}?offset=0&limit=1&paginationDetails=OFF&detailsLevel=FULL");
-        ObjectMapper mapper = new ObjectMapper();
         ResponseEntity<DepositProductResponse> responseResult = null;
-        String jsonBody;
         try {
             HttpHeaders requestHeaders = new HttpHeaders();
             requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
@@ -184,9 +184,7 @@ public class DepositProductRepository implements DepositProductService {
     @Override
     public TransactionsQueryResponse getAccountTransactions(TransactionFilterInfo transactionFilterInfo) {
         TransactionsQueryResponse queryResponse = null;
-        final int ROWS_LIMIT = 20;
         String operationUrl = mambuAPIRootUrl.concat("/deposits/transactions:search?limit=%d".formatted(ROWS_LIMIT));
-        ObjectMapper mapper = new ObjectMapper();
         ResponseEntity<DepositTransaction[]> responseResult = null;
         try {
             HttpHeaders requestHeaders = new HttpHeaders();
@@ -326,7 +324,6 @@ public class DepositProductRepository implements DepositProductService {
     @Override
     public LockAccountResponse lockAccount(String lockNotes, String accountKey) {
         LockAccountResponse lockAccountResponse = null;
-        final String LOCK_ACTION = "LOCK";
         String operationUrl = mambuAPIRootUrl.concat("/deposits/{accountKey}:changeState");
         var lockAccountCommand = new LockAccountCommand();
         lockAccountCommand.setAction(LOCK_ACTION);
