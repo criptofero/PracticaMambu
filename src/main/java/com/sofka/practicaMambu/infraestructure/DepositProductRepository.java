@@ -341,6 +341,7 @@ public class DepositProductRepository implements DepositProductService {
             RestTemplate restTemplate = new RestTemplate();
             responseResult = restTemplate.postForEntity(operationUrl, httpEntity, LockAccountResponse.class, accountKey);
             lockAccountResponse = responseResult.getBody();
+            lockAccountResponse.setStatusCode(responseResult.getStatusCode());
         } catch (RestClientException e) {
             lockAccountResponse = handleLockAccountErrorResponse(e);
         } catch (JsonProcessingException e) {
