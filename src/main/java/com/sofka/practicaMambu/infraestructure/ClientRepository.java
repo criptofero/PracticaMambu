@@ -64,32 +64,11 @@ public class ClientRepository implements ClientService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } catch (RestClientException e) {
-            createResponse = handleErrorResponse(e);
+            createResponse = new ClientCreateResponseDTO();
+            MambuAPIHelper.setResponseErrorInfo(createResponse, e);
         } catch (Exception e) {
             System.err.println(e.toString());
             throw new RuntimeException(e);
-        }
-        return createResponse;
-    }
-
-    private static ClientCreateResponseDTO handleErrorResponse(RestClientException e) {
-        ClientCreateResponseDTO createResponse;
-        System.err.println(e.toString());
-        createResponse = new ClientCreateResponseDTO();
-        String jsonError = e instanceof HttpStatusCodeException ?
-                ((HttpStatusCodeException) e).getResponseBodyAsString()
-                : "";
-        var errorCode = ((HttpStatusCodeException) e).getStatusCode();
-        createResponse.setStatusCode(errorCode);
-        System.err.println("errorCode: %s".formatted(errorCode.toString()));
-        System.err.println("value: %s".formatted(String.valueOf(errorCode.value())));
-        System.err.println("isError: %s".formatted(String.valueOf(errorCode.isError())));
-        System.err.println("is4xxClientError: %s".formatted(String.valueOf(errorCode.is4xxClientError())));
-        System.err.println("is2xxSuccessful: %s".formatted(String.valueOf(errorCode.is2xxSuccessful())));
-        if (!jsonError.isEmpty()) {
-            jsonError = jsonError.substring(jsonError.indexOf("["), jsonError.indexOf("]") + 1);
-            MambuErrorResponse[] errorResponse = MambuErrorResponse.fromJson(jsonError);
-            createResponse.setErrors(errorResponse);
         }
         return createResponse;
     }

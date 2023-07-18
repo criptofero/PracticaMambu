@@ -2,10 +2,11 @@ package com.sofka.practicaMambu.domain.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.sofka.practicaMambu.domain.model.contracts.MambuResponse;
 import org.springframework.http.HttpStatusCode;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class CreateDepositAccountResponse {
+public class CreateDepositAccountResponse implements MambuResponse {
     private String encodedKey;
     private String id;
     private String name;
@@ -57,18 +58,22 @@ public class CreateDepositAccountResponse {
         this.accountState = accountState;
     }
 
+    @Override
     public MambuErrorResponse[] getErrors() {
         return errors;
     }
 
+    @Override
     public void setErrors(MambuErrorResponse[] errors) {
         this.errors = errors;
     }
 
+    @Override
     public HttpStatusCode getStatusCode() {
         return statusCode;
     }
 
+    @Override
     public void setStatusCode(HttpStatusCode statusCode) {
         this.statusCode = statusCode;
     }

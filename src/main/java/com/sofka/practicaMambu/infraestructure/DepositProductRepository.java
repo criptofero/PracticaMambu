@@ -87,27 +87,8 @@ public class DepositProductRepository implements DepositProductService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } catch (RestClientException e) {
-            System.err.println(e.toString());
             createResponse = new CreateDepositAccountResponse();
-            String jsonError = e instanceof HttpStatusCodeException ?
-                    ((HttpStatusCodeException) e).getResponseBodyAsString()
-                    : "";
-            var errorCode = ((HttpStatusCodeException) e).getStatusCode();
-            createResponse.setStatusCode(errorCode);
-            System.err.println("errorCode: %s".formatted(errorCode.toString()));
-            System.err.println("value: %s".formatted(String.valueOf(errorCode.value())));
-            System.err.println("isError: %s".formatted(String.valueOf(errorCode.isError())));
-            System.err.println("is4xxClientError: %s".formatted(String.valueOf(errorCode.is4xxClientError())));
-            System.err.println("is2xxSuccessful: %s".formatted(String.valueOf(errorCode.is2xxSuccessful())));
-            if (!jsonError.isEmpty()) {
-                try {
-                    jsonError = jsonError.substring(jsonError.indexOf("["), jsonError.indexOf("]") + 1);
-                    MambuErrorResponse[] errorResponse = new ObjectMapper().readValue(jsonError, MambuErrorResponse[].class);
-                    createResponse.setErrors(errorResponse);
-                } catch (JsonProcessingException ex) {
-
-                }
-            }
+            MambuAPIHelper.setResponseErrorInfo(createResponse, e);
         } catch (Exception e) {
             System.err.println(e.toString());
             throw new RuntimeException(e);
@@ -383,8 +364,8 @@ public class DepositProductRepository implements DepositProductService {
 
     private ApplyInterestResponse handleApplyInterestErrorResponse(RestClientException e) {
         ApplyInterestResponse applyInterestResponse = new ApplyInterestResponse();
-        HttpStatusCode errorCode = getHttpStatusCode(e);
-        MambuErrorResponse[] errorResponse = getMambuErrorResponses(e);
+        HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
+        MambuErrorResponse[] errorResponse = MambuAPIHelper.getMambuErrorResponses(e);
         applyInterestResponse.setStatusCode(errorCode);
         applyInterestResponse.setErrors(errorResponse);
         return applyInterestResponse;
@@ -392,8 +373,8 @@ public class DepositProductRepository implements DepositProductService {
 
     private static CreateDepositTransactionResponse handleDepositTransactionErrorResponse(RestClientException e) {
         CreateDepositTransactionResponse createTransactionResponse = new CreateDepositTransactionResponse();
-        HttpStatusCode errorCode = getHttpStatusCode(e);
-        MambuErrorResponse[] errorResponse = getMambuErrorResponses(e);
+        HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
+        MambuErrorResponse[] errorResponse = MambuAPIHelper.getMambuErrorResponses(e);
         createTransactionResponse.setStatusCode(errorCode);
         createTransactionResponse.setErrors(errorResponse);
         return createTransactionResponse;
@@ -401,8 +382,8 @@ public class DepositProductRepository implements DepositProductService {
 
     private TransactionsQueryResponse handleQueryErrorResponse(RestClientException e) {
         TransactionsQueryResponse queryErrorResponse = new TransactionsQueryResponse();
-        HttpStatusCode errorCode = getHttpStatusCode(e);
-        MambuErrorResponse[] errorResponse = getMambuErrorResponses(e);
+        HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
+        MambuErrorResponse[] errorResponse = MambuAPIHelper.getMambuErrorResponses(e);
         queryErrorResponse.setStatusCode(errorCode);
         queryErrorResponse.setErrors(errorResponse);
         return queryErrorResponse;
@@ -410,8 +391,8 @@ public class DepositProductRepository implements DepositProductService {
 
     private static CreateBalanceBlockResponse handleBlockAccountBalanceErrorResponse(RestClientException e) {
         CreateBalanceBlockResponse balanceBlockResponse = new CreateBalanceBlockResponse();
-        HttpStatusCode errorCode = getHttpStatusCode(e);
-        MambuErrorResponse[] errorResponse = getMambuErrorResponses(e);
+        HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
+        MambuErrorResponse[] errorResponse = MambuAPIHelper.getMambuErrorResponses(e);
         balanceBlockResponse.setStatusCode(errorCode);
         balanceBlockResponse.setErrors(errorResponse);
         return balanceBlockResponse;
@@ -419,8 +400,8 @@ public class DepositProductRepository implements DepositProductService {
 
     private ApplySeizureResponse handleApplySeizureErrorResponse(RestClientException e) {
         ApplySeizureResponse applySeizureErrorResponse = new ApplySeizureResponse();
-        HttpStatusCode errorCode = getHttpStatusCode(e);
-        MambuErrorResponse[] errorResponse = getMambuErrorResponses(e);
+        HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
+        MambuErrorResponse[] errorResponse = MambuAPIHelper.getMambuErrorResponses(e);
         applySeizureErrorResponse.setStatusCode(errorCode);
         applySeizureErrorResponse.setErrors(errorResponse);
         return applySeizureErrorResponse;
@@ -428,33 +409,10 @@ public class DepositProductRepository implements DepositProductService {
 
     private static LockAccountResponse handleLockAccountErrorResponse(RestClientException e) {
         LockAccountResponse lockAccountResponse = new LockAccountResponse();
-        HttpStatusCode errorCode = getHttpStatusCode(e);
-        MambuErrorResponse[] errorResponse = getMambuErrorResponses(e);
+        HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
+        MambuErrorResponse[] errorResponse = MambuAPIHelper.getMambuErrorResponses(e);
         lockAccountResponse.setStatusCode(errorCode);
         lockAccountResponse.setErrors(errorResponse);
         return lockAccountResponse;
-    }
-
-    private static HttpStatusCode getHttpStatusCode(RestClientException e) {
-        var errorCode = ((HttpStatusCodeException) e).getStatusCode();
-        System.err.println(e);
-        System.err.println("errorCode: %s".formatted(errorCode.toString()));
-        System.err.println("value: %s".formatted(String.valueOf(errorCode.value())));
-        System.err.println("isError: %s".formatted(String.valueOf(errorCode.isError())));
-        System.err.println("is4xxClientError: %s".formatted(String.valueOf(errorCode.is4xxClientError())));
-        System.err.println("is2xxSuccessful: %s".formatted(String.valueOf(errorCode.is2xxSuccessful())));
-        return errorCode;
-    }
-
-    private static MambuErrorResponse[] getMambuErrorResponses(RestClientException e) {
-        MambuErrorResponse[] errorResponse = null;
-        String jsonError = e instanceof HttpStatusCodeException ?
-                ((HttpStatusCodeException) e).getResponseBodyAsString()
-                : "";
-        if (!jsonError.isEmpty()) {
-            jsonError = jsonError.substring(jsonError.indexOf("["), jsonError.indexOf("]") + 1);
-            errorResponse = MambuErrorResponse.fromJson(jsonError);
-        }
-        return errorResponse;
     }
 }
