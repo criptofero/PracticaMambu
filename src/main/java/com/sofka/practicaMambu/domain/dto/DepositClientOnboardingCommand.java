@@ -3,7 +3,7 @@ package com.sofka.practicaMambu.domain.dto;
 import com.sofka.practicaMambu.domain.model.Client;
 import com.sofka.practicaMambu.domain.model.DepositAccount;
 
-public class ClientOnboardingCommand {
+public class DepositClientOnboardingCommand {
     private Client clientInfo;
     private DepositAccount accountInfo;
 

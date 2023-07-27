@@ -1,13 +1,13 @@
 package com.sofka.practicaMambu.application.controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sofka.practicaMambu.domain.activeProducts.dto.LoanClientOnboardingCommand;
+import com.sofka.practicaMambu.domain.activeProducts.dto.LoanClientOnboardingResponse;
 import com.sofka.practicaMambu.domain.dto.ClientCreateResponseDTO;
-import com.sofka.practicaMambu.domain.dto.ClientOnboardingCommand;
-import com.sofka.practicaMambu.domain.dto.ClientOnboardingResponse;
+import com.sofka.practicaMambu.domain.dto.DepositClientOnboardingCommand;
+import com.sofka.practicaMambu.domain.dto.DepositClientOnboardingResponse;
 import com.sofka.practicaMambu.domain.dto.MambuErrorResponse;
 import com.sofka.practicaMambu.domain.model.Client;
 import com.sofka.practicaMambu.domain.service.ClientService;
-import com.sofka.practicaMambu.infraestructure.ClientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,15 +29,33 @@ public class ClientController {
         return responseEntity;
     }
 
-    @PostMapping("/onboarding")
-    public ResponseEntity<ClientOnboardingResponse> activateClient(@RequestBody ClientOnboardingCommand command){
-        ResponseEntity<ClientOnboardingResponse> result = null;
-        ClientOnboardingResponse onboardingResponse = new ClientOnboardingResponse();
+    @PostMapping("/deposit-onboarding")
+    public ResponseEntity<DepositClientOnboardingResponse> activateDepositClient(@RequestBody DepositClientOnboardingCommand command){
+        ResponseEntity<DepositClientOnboardingResponse> result = null;
+        DepositClientOnboardingResponse onboardingResponse = new DepositClientOnboardingResponse();
         try{
-            onboardingResponse = clientService.activateClient(command);
+            onboardingResponse = clientService.activateDepositClient(command);
             result = new ResponseEntity<>(onboardingResponse, onboardingResponse.getStatusCode());
         }catch(ResponseStatusException exc){
-            var errorResponse = new ClientOnboardingResponse();
+            var errorResponse = new DepositClientOnboardingResponse();
+            var jsonError = exc.getMessage();
+            jsonError = jsonError.substring(jsonError.indexOf("["), jsonError.indexOf("]") + 1);
+            MambuErrorResponse[] onboardingErrors = MambuErrorResponse.fromJson(jsonError);
+            errorResponse.setErrors(onboardingErrors);
+            result = new ResponseEntity<>(errorResponse, exc.getStatusCode());
+        }
+        return result;
+    }
+
+    @PostMapping("/loan-onboarding")
+    public ResponseEntity<LoanClientOnboardingResponse> activateLoanClient(@RequestBody LoanClientOnboardingCommand command){
+        ResponseEntity<LoanClientOnboardingResponse> result = null;
+        LoanClientOnboardingResponse onboardingResponse = new LoanClientOnboardingResponse();
+        try{
+            onboardingResponse = clientService.activateLoanClient(command);
+            result = new ResponseEntity<>(onboardingResponse, onboardingResponse.getStatusCode());
+        }catch(ResponseStatusException exc){
+            var errorResponse = new LoanClientOnboardingResponse();
             var jsonError = exc.getMessage();
             jsonError = jsonError.substring(jsonError.indexOf("["), jsonError.indexOf("]") + 1);
             MambuErrorResponse[] onboardingErrors = MambuErrorResponse.fromJson(jsonError);

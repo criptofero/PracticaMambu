@@ -2,21 +2,22 @@ package com.sofka.practicaMambu.infraestructure;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sofka.practicaMambu.domain.activeProducts.dto.LoanClientOnboardingCommand;
+import com.sofka.practicaMambu.domain.activeProducts.dto.LoanClientOnboardingResponse;
 import com.sofka.practicaMambu.domain.dto.ClientCreateResponseDTO;
-import com.sofka.practicaMambu.domain.dto.ClientOnboardingCommand;
-import com.sofka.practicaMambu.domain.dto.ClientOnboardingResponse;
-import com.sofka.practicaMambu.domain.dto.MambuErrorResponse;
+import com.sofka.practicaMambu.domain.dto.DepositClientOnboardingCommand;
+import com.sofka.practicaMambu.domain.dto.DepositClientOnboardingResponse;
 import com.sofka.practicaMambu.domain.model.Client;
 import com.sofka.practicaMambu.domain.seedWork.MambuAPIHelper;
 import com.sofka.practicaMambu.domain.service.ClientService;
 import com.sofka.practicaMambu.domain.service.DepositProductService;
+import com.sofka.practicaMambu.domain.service.LoanProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
@@ -27,7 +28,10 @@ import java.net.InetAddress;
 public class ClientRepository implements ClientService {
 
     @Autowired
-    private DepositProductService productService;
+    private DepositProductService depositProductService;
+
+    @Autowired
+    private LoanProductService loanProductService;
     private RestTemplate restTemplate;
 
     @Value("${mambuAPI.rootUrl}")
@@ -74,8 +78,8 @@ public class ClientRepository implements ClientService {
     }
 
     @Override
-    public ClientOnboardingResponse activateClient(ClientOnboardingCommand command) {
-        ClientOnboardingResponse onboardingResponse = null;
+    public DepositClientOnboardingResponse activateDepositClient(DepositClientOnboardingCommand command) {
+        DepositClientOnboardingResponse onboardingResponse = null;
         String jsonError;
         if (command.getClientInfo() != null) {
             var clientCreateResponse = createClient(command.getClientInfo());
@@ -89,7 +93,7 @@ public class ClientRepository implements ClientService {
             }
             var accountInfo = command.getAccountInfo();
             accountInfo.setAccountHolderKey(clientCreateResponse.getEncodedKey());
-            var accountCreateResponse = productService.createAccount(accountInfo);
+            var accountCreateResponse = depositProductService.createAccount(accountInfo);
             if (accountCreateResponse.getStatusCode().isError()) {
                 try {
                     jsonError = new ObjectMapper().writeValueAsString(accountCreateResponse.getErrors());
@@ -98,9 +102,42 @@ public class ClientRepository implements ClientService {
                 }
                 throw new ResponseStatusException(accountCreateResponse.getStatusCode(), jsonError);
             }
-            onboardingResponse = new ClientOnboardingResponse();
+            onboardingResponse = new DepositClientOnboardingResponse();
             onboardingResponse.setClientInfo(clientCreateResponse);
             onboardingResponse.setAccountInfo(accountCreateResponse);
+            onboardingResponse.setStatusCode(accountCreateResponse.getStatusCode());
+        }
+        return onboardingResponse;
+    }
+
+    @Override
+    public LoanClientOnboardingResponse activateLoanClient(LoanClientOnboardingCommand command) {
+        LoanClientOnboardingResponse onboardingResponse = null;
+        String jsonError;
+        if (command.getClientInfo() != null) {
+            var clientCreateResponse = createClient(command.getClientInfo());
+            if (clientCreateResponse.getStatusCode().isError()) {
+                try {
+                    jsonError = new ObjectMapper().writeValueAsString(clientCreateResponse.getErrors());
+                } catch (JsonProcessingException e) {
+                    jsonError = "";
+                }
+                throw new ResponseStatusException(clientCreateResponse.getStatusCode(), jsonError);
+            }
+            var accountInfo = command.getLoanAccountInfo();
+            accountInfo.setAccountHolderKey(clientCreateResponse.getEncodedKey());
+            var accountCreateResponse = loanProductService.createLoanAccount(accountInfo);
+            if (accountCreateResponse.getStatusCode().isError()) {
+                try {
+                    jsonError = new ObjectMapper().writeValueAsString(accountCreateResponse.getErrors());
+                } catch (JsonProcessingException e) {
+                    jsonError = "";
+                }
+                throw new ResponseStatusException(accountCreateResponse.getStatusCode(), jsonError);
+            }
+            onboardingResponse = new LoanClientOnboardingResponse();
+            onboardingResponse.setClientInfo(clientCreateResponse);
+            onboardingResponse.setLoanAccountInfo(accountCreateResponse);
             onboardingResponse.setStatusCode(accountCreateResponse.getStatusCode());
         }
         return onboardingResponse;
