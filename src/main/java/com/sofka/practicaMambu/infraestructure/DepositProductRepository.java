@@ -13,7 +13,6 @@ import com.sofka.practicaMambu.domain.seedWork.MambuAPIHelper;
 import com.sofka.practicaMambu.domain.service.DepositProductService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
-import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 

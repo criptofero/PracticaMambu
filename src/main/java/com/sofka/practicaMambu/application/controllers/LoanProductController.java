@@ -23,9 +23,16 @@ public class LoanProductController {
     }
 
     @PostMapping("/loans")
-    public ResponseEntity<LoanAccountResponse> createDepositAccount(@RequestBody CreateLoanAccountCommand loanAccountCommand) {
+    public ResponseEntity<LoanAccountResponse> createLoanAccount(@RequestBody CreateLoanAccountCommand loanAccountCommand) {
         LoanAccountResponse responseDTO = productService.createLoanAccount(loanAccountCommand);
         ResponseEntity responseEntity = new ResponseEntity(responseDTO, responseDTO.getStatusCode());
+        return responseEntity;
+    }
+
+    @PostMapping("/loans/{accountKey}:approve")
+    public ResponseEntity<LoanAccountResponse> approveLoanAccount (@RequestBody String notes, @PathVariable String accountKey) {
+        LoanAccountResponse loanAccountResponse = productService.approveLoanAccount(accountKey, notes);
+        ResponseEntity responseEntity = new ResponseEntity(loanAccountResponse, loanAccountResponse.getStatusCode());
         return responseEntity;
     }
 }
