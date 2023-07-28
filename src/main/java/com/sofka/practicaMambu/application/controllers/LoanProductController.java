@@ -2,6 +2,7 @@ package com.sofka.practicaMambu.application.controllers;
 
 import com.sofka.practicaMambu.domain.activeProducts.dto.CreateLoanAccountCommand;
 import com.sofka.practicaMambu.domain.activeProducts.dto.LoanAccountResponse;
+import com.sofka.practicaMambu.domain.activeProducts.dto.LoanDisbursementResponse;
 import com.sofka.practicaMambu.domain.activeProducts.dto.LoanProductResponse;
 import com.sofka.practicaMambu.domain.service.LoanProductService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,13 @@ public class LoanProductController {
     public ResponseEntity<LoanAccountResponse> approveLoanAccount (@RequestBody String notes, @PathVariable String accountKey) {
         LoanAccountResponse loanAccountResponse = productService.approveLoanAccount(accountKey, notes);
         ResponseEntity responseEntity = new ResponseEntity(loanAccountResponse, loanAccountResponse.getStatusCode());
+        return responseEntity;
+    }
+
+    @PostMapping("/loans/{accountKey}:disburse")
+    public ResponseEntity<LoanDisbursementResponse> disburseLoan (@RequestBody String notes, @PathVariable String accountKey) {
+        LoanDisbursementResponse loanDisbursementResponse = productService.disburseLoan(accountKey, notes);
+        ResponseEntity responseEntity = new ResponseEntity(loanDisbursementResponse, loanDisbursementResponse.getStatusCode());
         return responseEntity;
     }
 }
