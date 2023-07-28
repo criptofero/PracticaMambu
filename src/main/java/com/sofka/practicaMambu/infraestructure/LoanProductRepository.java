@@ -3,6 +3,7 @@ package com.sofka.practicaMambu.infraestructure;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sofka.practicaMambu.domain.activeProducts.dto.*;
+import com.sofka.practicaMambu.domain.dto.DepositProductResponse;
 import com.sofka.practicaMambu.domain.dto.MambuErrorResponse;
 import com.sofka.practicaMambu.domain.model.activeProducts.LoanAccount;
 import com.sofka.practicaMambu.domain.seedWork.MambuAPIHelper;
@@ -45,6 +46,26 @@ public class LoanProductRepository implements LoanProductService {
             throw new RuntimeException(e);
         }
         return productResponse;
+    }
+
+    @Override
+    public LoanAccountQueryResponse getLoanAccountById(String accountKey) {
+        LoanAccountQueryResponse accountQueryResponse = null;
+        String operationUrl = mambuAPIRootUrl.concat("/loans/{accountKey}");
+        ResponseEntity<LoanAccountQueryResponse> responseResult = null;
+        try {
+            HttpHeaders requestHeaders = new HttpHeaders();
+            requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
+            MambuAPIHelper.addAcceptHeader(requestHeaders);
+            HttpEntity<?> httpEntity = new HttpEntity<>(null, requestHeaders);
+            RestTemplate restTemplate = new RestTemplate();
+            responseResult = restTemplate.exchange(operationUrl, HttpMethod.GET, httpEntity, LoanAccountQueryResponse.class, accountKey);
+            accountQueryResponse = responseResult.getBody();
+        } catch (Exception e) {
+            System.err.println(e);
+            throw new RuntimeException(e);
+        }
+        return accountQueryResponse;
     }
 
     @Override

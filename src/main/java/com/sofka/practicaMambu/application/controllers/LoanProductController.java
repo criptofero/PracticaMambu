@@ -1,9 +1,6 @@
 package com.sofka.practicaMambu.application.controllers;
 
-import com.sofka.practicaMambu.domain.activeProducts.dto.CreateLoanAccountCommand;
-import com.sofka.practicaMambu.domain.activeProducts.dto.LoanAccountResponse;
-import com.sofka.practicaMambu.domain.activeProducts.dto.LoanDisbursementResponse;
-import com.sofka.practicaMambu.domain.activeProducts.dto.LoanProductResponse;
+import com.sofka.practicaMambu.domain.activeProducts.dto.*;
 import com.sofka.practicaMambu.domain.service.LoanProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -27,6 +24,13 @@ public class LoanProductController {
     public ResponseEntity<LoanAccountResponse> createLoanAccount(@RequestBody CreateLoanAccountCommand loanAccountCommand) {
         LoanAccountResponse responseDTO = productService.createLoanAccount(loanAccountCommand);
         ResponseEntity responseEntity = new ResponseEntity(responseDTO, responseDTO.getStatusCode());
+        return responseEntity;
+    }
+
+    @GetMapping("/loans/{accountKey}")
+    public ResponseEntity<LoanAccountQueryResponse> getLoanAccountById(@PathVariable String accountKey) {
+        var response = productService.getLoanAccountById(accountKey);
+        ResponseEntity responseEntity = new ResponseEntity(response, HttpStatus.OK);
         return responseEntity;
     }
 
