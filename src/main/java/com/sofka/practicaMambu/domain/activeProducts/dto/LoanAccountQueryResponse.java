@@ -1,9 +1,15 @@
 package com.sofka.practicaMambu.domain.activeProducts.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.sofka.practicaMambu.domain.dto.MambuErrorResponse;
 import com.sofka.practicaMambu.domain.model.activeProducts.InterestSettings;
 import com.sofka.practicaMambu.domain.model.activeProducts.LoanScheduleSettings;
+import com.sofka.practicaMambu.domain.model.contracts.MambuResponse;
+import org.springframework.http.HttpStatusCode;
 
-public class LoanAccountQueryResponse {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class LoanAccountQueryResponse implements MambuResponse {
 
     private String encodedKey;
     private String id;
@@ -16,10 +22,16 @@ public class LoanAccountQueryResponse {
     private String accountState;
     private String accountSubState;
     private String productTypeKey;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private Long loanAmount;
     private LoanBalanceInfo balances;
     private InterestSettings interestSettings;
     private LoanScheduleSettings scheduleSettings;
+
+    private MambuErrorResponse[] errors;
+
+    @JsonIgnore
+    private HttpStatusCode statusCode;
 
     public String getEncodedKey() {
         return encodedKey;
@@ -139,5 +151,25 @@ public class LoanAccountQueryResponse {
 
     public void setScheduleSettings(LoanScheduleSettings scheduleSettings) {
         this.scheduleSettings = scheduleSettings;
+    }
+
+    @Override
+    public MambuErrorResponse[] getErrors() {
+        return errors;
+    }
+
+    @Override
+    public void setErrors(MambuErrorResponse[] errors) {
+        this.errors = errors;
+    }
+
+    @Override
+    public HttpStatusCode getStatusCode() {
+        return statusCode;
+    }
+
+    @Override
+    public void setStatusCode(HttpStatusCode statusCode) {
+        this.statusCode = statusCode;
     }
 }

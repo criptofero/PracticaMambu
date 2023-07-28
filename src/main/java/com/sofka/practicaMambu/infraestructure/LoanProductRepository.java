@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sofka.practicaMambu.domain.activeProducts.dto.*;
 import com.sofka.practicaMambu.domain.dto.DepositProductResponse;
+import com.sofka.practicaMambu.domain.dto.LockAccountResponse;
 import com.sofka.practicaMambu.domain.dto.MambuErrorResponse;
 import com.sofka.practicaMambu.domain.model.activeProducts.LoanAccount;
 import com.sofka.practicaMambu.domain.seedWork.MambuAPIHelper;
@@ -166,6 +167,35 @@ public class LoanProductRepository implements LoanProductService {
         return disbursementResponse;
     }
 
+    @Override
+    public LoanAccountQueryResponse lockLoanAccount(String accountKey, LockLoanCommand lockLoanCommand) {
+        LoanAccountQueryResponse lockAccountResponse = null;
+        String operationUrl = mambuAPIRootUrl.concat("/loans/{accountKey}/lock-transactions");
+        String jsonBody;
+        ObjectMapper mapper = new ObjectMapper();
+        ResponseEntity<LoanAccountQueryResponse> responseResult = null;
+        try {
+            jsonBody = mapper.writeValueAsString(lockLoanCommand);
+            HttpHeaders requestHeaders = new HttpHeaders();
+            requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
+            MambuAPIHelper.addAcceptHeader(requestHeaders);
+            MambuAPIHelper.addIdempotencyHeader(requestHeaders, jsonBody);
+            HttpEntity<LockLoanCommand> httpEntity = new HttpEntity<>(lockLoanCommand, requestHeaders);
+            RestTemplate restTemplate = new RestTemplate();
+            responseResult = restTemplate.exchange(operationUrl, HttpMethod.POST, httpEntity, LoanAccountQueryResponse.class, accountKey);
+            lockAccountResponse = getLoanAccountById(accountKey);
+            lockAccountResponse.setStatusCode(responseResult.getStatusCode());
+        } catch (RestClientException e) {
+            lockAccountResponse = handleLoanLockResponse(e);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        } catch (Exception e) {
+            System.err.println(e.toString());
+            throw new RuntimeException(e);
+        }
+        return lockAccountResponse;
+    }
+
     private static LoanAccountResponse handleLoanAccountErrorResponse(RestClientException e) {
         LoanAccountResponse loanAccountResponse = new LoanAccountResponse();
         HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
@@ -182,5 +212,14 @@ public class LoanProductRepository implements LoanProductService {
         loanDisbursementResponse.setStatusCode(errorCode);
         loanDisbursementResponse.setErrors(errorResponse);
         return loanDisbursementResponse;
+    }
+
+    private static LoanAccountQueryResponse handleLoanLockResponse(RestClientException e) {
+        LoanAccountQueryResponse loanLockResponse = new LoanAccountQueryResponse();
+        HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
+        MambuErrorResponse[] errorResponse = MambuAPIHelper.getMambuErrorResponses(e);
+        loanLockResponse.setStatusCode(errorCode);
+        loanLockResponse.setErrors(errorResponse);
+        return loanLockResponse;
     }
 }

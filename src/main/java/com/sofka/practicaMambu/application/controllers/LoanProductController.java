@@ -47,4 +47,11 @@ public class LoanProductController {
         ResponseEntity responseEntity = new ResponseEntity(loanDisbursementResponse, loanDisbursementResponse.getStatusCode());
         return responseEntity;
     }
+
+    @PostMapping("/loans/{accountKey}:lock")
+    public ResponseEntity<LoanAccountQueryResponse> lockLoanAccount(@PathVariable String accountKey, @RequestBody LockLoanCommand lockLoanCommand) {
+        var response = productService.lockLoanAccount(accountKey, lockLoanCommand);
+        ResponseEntity responseEntity = new ResponseEntity(response, response.getStatusCode());
+        return responseEntity;
+    }
 }
