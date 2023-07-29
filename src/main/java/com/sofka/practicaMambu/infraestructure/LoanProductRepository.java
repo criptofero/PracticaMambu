@@ -3,8 +3,6 @@ package com.sofka.practicaMambu.infraestructure;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sofka.practicaMambu.domain.activeProducts.dto.*;
-import com.sofka.practicaMambu.domain.dto.DepositProductResponse;
-import com.sofka.practicaMambu.domain.dto.LockAccountResponse;
 import com.sofka.practicaMambu.domain.dto.MambuErrorResponse;
 import com.sofka.practicaMambu.domain.model.activeProducts.LoanAccount;
 import com.sofka.practicaMambu.domain.seedWork.MambuAPIHelper;
@@ -105,12 +103,12 @@ public class LoanProductRepository implements LoanProductService {
     }
 
     @Override
-    public LoanAccountResponse approveLoanAccount(String accountKey, String approveNotes) {
+    public LoanAccountResponse approveLoanAccount(String accountKey, LoanActionCommand approveCommand) {
         LoanAccountResponse loanAccountResponse = null;
         String operationUrl = mambuAPIRootUrl.concat("/loans/{accountKey}:changeState");
         var approveLoanAccountCommand = new ApproveLoanAccountCommand();
         approveLoanAccountCommand.setAction(APPROVE_ACTION);
-        approveLoanAccountCommand.setNotes(approveNotes);
+        approveLoanAccountCommand.setNotes(approveCommand.getNotes());
         String jsonBody;
         ObjectMapper mapper = new ObjectMapper();
         ResponseEntity<LoanAccountResponse> responseResult = null;
@@ -137,11 +135,11 @@ public class LoanProductRepository implements LoanProductService {
     }
 
     @Override
-    public LoanDisbursementResponse disburseLoan(String accountKey, String disburseNotes) {
+    public LoanDisbursementResponse disburseLoan(String accountKey, LoanActionCommand disburseCommand) {
         LoanDisbursementResponse disbursementResponse = null;
         String operationUrl = mambuAPIRootUrl.concat("/loans/{accountKey}/disbursement-transactions");
         var disbursementCommand = new LoanDisbursementCommand();
-        disbursementCommand.setNotes(disburseNotes);
+        disbursementCommand.setNotes(disburseCommand.getNotes());
         String jsonBody;
         ObjectMapper mapper = new ObjectMapper();
         ResponseEntity<LoanDisbursementResponse> responseResult = null;
@@ -168,7 +166,7 @@ public class LoanProductRepository implements LoanProductService {
     }
 
     @Override
-    public LoanAccountQueryResponse lockLoanAccount(String accountKey, LockLoanCommand lockLoanCommand) {
+    public LoanAccountQueryResponse lockLoanAccount(String accountKey, LoanActionCommand lockLoanCommand) {
         LoanAccountQueryResponse lockAccountResponse = null;
         String operationUrl = mambuAPIRootUrl.concat("/loans/{accountKey}/lock-transactions");
         String jsonBody;
@@ -180,7 +178,7 @@ public class LoanProductRepository implements LoanProductService {
             requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
             MambuAPIHelper.addAcceptHeader(requestHeaders);
             MambuAPIHelper.addIdempotencyHeader(requestHeaders, jsonBody);
-            HttpEntity<LockLoanCommand> httpEntity = new HttpEntity<>(lockLoanCommand, requestHeaders);
+            HttpEntity<LoanActionCommand> httpEntity = new HttpEntity<>(lockLoanCommand, requestHeaders);
             RestTemplate restTemplate = new RestTemplate();
             responseResult = restTemplate.exchange(operationUrl, HttpMethod.POST, httpEntity, LoanAccountQueryResponse.class, accountKey);
             lockAccountResponse = getLoanAccountById(accountKey);

@@ -1,6 +1,6 @@
 package com.sofka.practicaMambu.domain.activeProducts.dto;
 
-public class LockLoanCommand {
+public class LoanActionCommand {
     private String notes;
 
     public String getNotes() {

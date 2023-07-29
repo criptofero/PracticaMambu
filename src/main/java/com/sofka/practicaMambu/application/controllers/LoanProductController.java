@@ -35,21 +35,21 @@ public class LoanProductController {
     }
 
     @PostMapping("/loans/{accountKey}:approve")
-    public ResponseEntity<LoanAccountResponse> approveLoanAccount (@RequestBody String notes, @PathVariable String accountKey) {
-        LoanAccountResponse loanAccountResponse = productService.approveLoanAccount(accountKey, notes);
+    public ResponseEntity<LoanAccountResponse> approveLoanAccount (@PathVariable String accountKey, @RequestBody LoanActionCommand approveCommand) {
+        LoanAccountResponse loanAccountResponse = productService.approveLoanAccount(accountKey, approveCommand);
         ResponseEntity responseEntity = new ResponseEntity(loanAccountResponse, loanAccountResponse.getStatusCode());
         return responseEntity;
     }
 
     @PostMapping("/loans/{accountKey}:disburse")
-    public ResponseEntity<LoanDisbursementResponse> disburseLoan (@RequestBody String notes, @PathVariable String accountKey) {
-        LoanDisbursementResponse loanDisbursementResponse = productService.disburseLoan(accountKey, notes);
+    public ResponseEntity<LoanDisbursementResponse> disburseLoan (@PathVariable String accountKey, @RequestBody LoanActionCommand disburseCommand) {
+        LoanDisbursementResponse loanDisbursementResponse = productService.disburseLoan(accountKey, disburseCommand);
         ResponseEntity responseEntity = new ResponseEntity(loanDisbursementResponse, loanDisbursementResponse.getStatusCode());
         return responseEntity;
     }
 
     @PostMapping("/loans/{accountKey}:lock")
-    public ResponseEntity<LoanAccountQueryResponse> lockLoanAccount(@PathVariable String accountKey, @RequestBody LockLoanCommand lockLoanCommand) {
+    public ResponseEntity<LoanAccountQueryResponse> lockLoanAccount(@PathVariable String accountKey, @RequestBody LoanActionCommand lockLoanCommand) {
         var response = productService.lockLoanAccount(accountKey, lockLoanCommand);
         ResponseEntity responseEntity = new ResponseEntity(response, response.getStatusCode());
         return responseEntity;
