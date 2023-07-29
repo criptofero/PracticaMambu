@@ -10,4 +10,5 @@ public interface LoanProductService {
     LoanDisbursementResponse disburseLoan(String accountKey, LoanActionCommand disburseCommand);
     LoanAccountQueryResponse lockLoanAccount(String accountKey, LoanActionCommand lockLoanCommand);
     LoanAccountQueryResponse payoffLoanAccount(String accountKey, LoanActionCommand payoffLoanCommand);
+    MakeRepaymentResponse makeLoanRepayment(String accountKey, RepaymentCommand repaymentCommand);
 }

@@ -225,6 +225,35 @@ public class LoanProductRepository implements LoanProductService {
         return payoffAccountResponse;
     }
 
+    @Override
+    public MakeRepaymentResponse makeLoanRepayment(String accountKey, RepaymentCommand repaymentCommand) {
+        MakeRepaymentResponse repaymentResponse = null;
+        String operationUrl = mambuAPIRootUrl.concat("/loans/{accountKey}/repayment-transactions");
+        String jsonBody;
+        ObjectMapper mapper = new ObjectMapper();
+        ResponseEntity<MakeRepaymentResponse> responseResult = null;
+        try {
+            jsonBody = mapper.writeValueAsString(repaymentCommand);
+            HttpHeaders requestHeaders = new HttpHeaders();
+            requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
+            MambuAPIHelper.addAcceptHeader(requestHeaders);
+            MambuAPIHelper.addIdempotencyHeader(requestHeaders, jsonBody);
+            HttpEntity<RepaymentCommand> httpEntity = new HttpEntity<>(repaymentCommand, requestHeaders);
+            RestTemplate restTemplate = new RestTemplate();
+            responseResult = restTemplate.exchange(operationUrl, HttpMethod.POST, httpEntity, MakeRepaymentResponse.class, accountKey);
+            repaymentResponse = responseResult.getBody();
+            repaymentResponse.setStatusCode( responseResult.getStatusCode());
+        } catch (RestClientException e) {
+            repaymentResponse = handleRepaymentResponse(e);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        } catch (Exception e) {
+            System.err.println(e.toString());
+            throw new RuntimeException(e);
+        }
+        return repaymentResponse;
+    }
+
     private static LoanAccountResponse handleLoanAccountErrorResponse(RestClientException e) {
         LoanAccountResponse loanAccountResponse = new LoanAccountResponse();
         HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
@@ -245,6 +274,15 @@ public class LoanProductRepository implements LoanProductService {
 
     private static LoanAccountQueryResponse handleLoanActionResponse(RestClientException e) {
         LoanAccountQueryResponse loanLockResponse = new LoanAccountQueryResponse();
+        HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
+        MambuErrorResponse[] errorResponse = MambuAPIHelper.getMambuErrorResponses(e);
+        loanLockResponse.setStatusCode(errorCode);
+        loanLockResponse.setErrors(errorResponse);
+        return loanLockResponse;
+    }
+
+    private static MakeRepaymentResponse handleRepaymentResponse(RestClientException e) {
+        MakeRepaymentResponse loanLockResponse = new MakeRepaymentResponse();
         HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
         MambuErrorResponse[] errorResponse = MambuAPIHelper.getMambuErrorResponses(e);
         loanLockResponse.setStatusCode(errorCode);

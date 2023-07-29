@@ -61,4 +61,11 @@ public class LoanProductController {
         ResponseEntity responseEntity = new ResponseEntity(response, response.getStatusCode());
         return responseEntity;
     }
+
+    @PostMapping("/loans/{accountKey}:repayment")
+    public ResponseEntity<LoanAccountQueryResponse> makeLoanRepayment(@PathVariable String accountKey, @RequestBody RepaymentCommand repaymentCommand) {
+        var response = productService.makeLoanRepayment(accountKey, repaymentCommand);
+        ResponseEntity responseEntity = new ResponseEntity(response, response.getStatusCode());
+        return responseEntity;
+    }
 }
