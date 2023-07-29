@@ -54,4 +54,11 @@ public class LoanProductController {
         ResponseEntity responseEntity = new ResponseEntity(response, response.getStatusCode());
         return responseEntity;
     }
+
+    @PostMapping("/loans/{accountKey}:payOff")
+    public ResponseEntity<LoanAccountQueryResponse> payoffLoanAccount(@PathVariable String accountKey, @RequestBody LoanActionCommand payoffLoanCommand) {
+        var response = productService.payoffLoanAccount(accountKey, payoffLoanCommand);
+        ResponseEntity responseEntity = new ResponseEntity(response, response.getStatusCode());
+        return responseEntity;
+    }
 }
