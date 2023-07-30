@@ -1,6 +1,7 @@
 package com.sofka.practicaMambu.application.controllers;
 
 import com.sofka.practicaMambu.domain.activeProducts.dto.*;
+import com.sofka.practicaMambu.domain.model.TransactionFilterInfo;
 import com.sofka.practicaMambu.domain.service.LoanProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -65,6 +66,27 @@ public class LoanProductController {
     @PostMapping("/loans/{accountKey}:repayment")
     public ResponseEntity<LoanAccountQueryResponse> makeLoanRepayment(@PathVariable String accountKey, @RequestBody RepaymentCommand repaymentCommand) {
         var response = productService.makeLoanRepayment(accountKey, repaymentCommand);
+        ResponseEntity responseEntity = new ResponseEntity(response, response.getStatusCode());
+        return responseEntity;
+    }
+
+    @GetMapping("/loans/transactions")
+    public ResponseEntity<LoanTransactionQueryResponse> getLoanTransactions(@RequestBody TransactionFilterInfo transactionFilterInfo) {
+        var response = productService.getLoanTransactions(transactionFilterInfo, 0);
+        ResponseEntity responseEntity = new ResponseEntity(response, response.getStatusCode());
+        return responseEntity;
+    }
+
+    @GetMapping("/loans/{accountKey}/disbursement")
+    public ResponseEntity<LoanTransactionQueryResponse> getLoanDisbursement(@PathVariable String accountKey) {
+        var response = productService.getLoanDisbursement(accountKey);
+        ResponseEntity responseEntity = new ResponseEntity(response, response.getStatusCode());
+        return responseEntity;
+    }
+
+    @GetMapping("/loans/{accountKey}/repayments")
+    public ResponseEntity<LoanTransactionQueryResponse> getLoanRepayments(@PathVariable String accountKey) {
+        var response = productService.getLoanRepayments(accountKey);
         ResponseEntity responseEntity = new ResponseEntity(response, response.getStatusCode());
         return responseEntity;
     }

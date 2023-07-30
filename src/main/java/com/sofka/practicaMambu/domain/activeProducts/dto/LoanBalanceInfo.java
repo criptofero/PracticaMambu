@@ -1,58 +1,72 @@
 package com.sofka.practicaMambu.domain.activeProducts.dto;
 
-public class LoanBalanceInfo {
-    private Long redrawBalance;
-    private Long principalDue;
-    private Long principalPaid;
-    private Long principalBalance;
-    private Long interestPaid;
-    private Long interestBalance;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
-    public Long getRedrawBalance() {
+import java.math.BigDecimal;
+
+@JsonInclude(JsonInclude.Include.NON_DEFAULT)
+public class LoanBalanceInfo {
+    private BigDecimal redrawBalance;
+    private BigDecimal principalDue;
+    private BigDecimal principalPaid;
+    private BigDecimal principalBalance;
+    private BigDecimal interestPaid;
+    private BigDecimal interestBalance;
+    private BigDecimal totalBalance;
+
+    public BigDecimal getRedrawBalance() {
         return redrawBalance;
     }
 
-    public void setRedrawBalance(Long redrawBalance) {
+    public void setRedrawBalance(BigDecimal redrawBalance) {
         this.redrawBalance = redrawBalance;
     }
 
-    public Long getPrincipalDue() {
+    public BigDecimal getPrincipalDue() {
         return principalDue;
     }
 
-    public void setPrincipalDue(Long principalDue) {
+    public void setPrincipalDue(BigDecimal principalDue) {
         this.principalDue = principalDue;
     }
 
-    public Long getPrincipalPaid() {
+    public BigDecimal getPrincipalPaid() {
         return principalPaid;
     }
 
-    public void setPrincipalPaid(Long principalPaid) {
+    public void setPrincipalPaid(BigDecimal principalPaid) {
         this.principalPaid = principalPaid;
     }
 
-    public Long getPrincipalBalance() {
+    public BigDecimal getPrincipalBalance() {
         return principalBalance;
     }
 
-    public void setPrincipalBalance(Long principalBalance) {
+    public void setPrincipalBalance(BigDecimal principalBalance) {
         this.principalBalance = principalBalance;
     }
 
-    public Long getInterestPaid() {
+    public BigDecimal getInterestPaid() {
         return interestPaid;
     }
 
-    public void setInterestPaid(Long interestPaid) {
+    public void setInterestPaid(BigDecimal interestPaid) {
         this.interestPaid = interestPaid;
     }
 
-    public Long getInterestBalance() {
+    public BigDecimal getInterestBalance() {
         return interestBalance;
     }
 
-    public void setInterestBalance(Long interestBalance) {
+    public void setInterestBalance(BigDecimal interestBalance) {
         this.interestBalance = interestBalance;
+    }
+
+    public BigDecimal getTotalBalance() {
+        return totalBalance;
+    }
+
+    public void setTotalBalance(BigDecimal totalBalance) {
+        this.totalBalance = totalBalance;
     }
 }

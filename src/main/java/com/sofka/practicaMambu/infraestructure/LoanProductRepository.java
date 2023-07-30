@@ -4,7 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sofka.practicaMambu.domain.activeProducts.dto.*;
 import com.sofka.practicaMambu.domain.dto.MambuErrorResponse;
+import com.sofka.practicaMambu.domain.model.TransactionFilterInfo;
 import com.sofka.practicaMambu.domain.model.activeProducts.LoanAccount;
+import com.sofka.practicaMambu.domain.model.activeProducts.LoanTransaction;
+import com.sofka.practicaMambu.domain.model.query.MambuQueryFilter;
+import com.sofka.practicaMambu.domain.model.query.MambuSortingCriteria;
+import com.sofka.practicaMambu.domain.seedWork.CommonUtils;
 import com.sofka.practicaMambu.domain.seedWork.MambuAPIHelper;
 import com.sofka.practicaMambu.domain.seedWork.mappers.LoanAccountMapper;
 import com.sofka.practicaMambu.domain.service.LoanProductService;
@@ -17,6 +22,8 @@ public class LoanProductRepository implements LoanProductService {
     public static final String LOAN_ACCOUNT_PRODUCT_ID = "microcredcol";
     public static final String LOAN_ACCOUNT_DEFAULT_HOLDER_TYPE = "CLIENT";
     public static final String APPROVE_ACTION = "APPROVE";
+
+    public static final int MAX_ROWS_LIMIT = 20;
 
     @Value("${mambuAPI.rootUrl}")
     private String mambuAPIRootUrl;
@@ -242,7 +249,7 @@ public class LoanProductRepository implements LoanProductService {
             RestTemplate restTemplate = new RestTemplate();
             responseResult = restTemplate.exchange(operationUrl, HttpMethod.POST, httpEntity, MakeRepaymentResponse.class, accountKey);
             repaymentResponse = responseResult.getBody();
-            repaymentResponse.setStatusCode( responseResult.getStatusCode());
+            repaymentResponse.setStatusCode(responseResult.getStatusCode());
         } catch (RestClientException e) {
             repaymentResponse = handleRepaymentResponse(e);
         } catch (JsonProcessingException e) {
@@ -252,6 +259,83 @@ public class LoanProductRepository implements LoanProductService {
             throw new RuntimeException(e);
         }
         return repaymentResponse;
+    }
+
+    @Override
+    public LoanTransactionQueryResponse getLoanTransactions(TransactionFilterInfo transactionFilterInfo, int rowsLimit) {
+        LoanTransactionQueryResponse queryResponse = null;
+        if (rowsLimit < 1 || rowsLimit > MAX_ROWS_LIMIT) {
+            rowsLimit = MAX_ROWS_LIMIT;
+        }
+        String operationUrl = mambuAPIRootUrl.concat("/loans/transactions:search?limit=%d".formatted(rowsLimit));
+        ResponseEntity<LoanTransaction[]> responseResult = null;
+        try {
+            HttpHeaders requestHeaders = new HttpHeaders();
+            requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
+            MambuAPIHelper.addAcceptHeader(requestHeaders);
+            HttpEntity<TransactionFilterInfo> httpEntity = new HttpEntity<>(transactionFilterInfo, requestHeaders);
+            RestTemplate restTemplate = new RestTemplate();
+            responseResult = restTemplate.exchange(operationUrl, HttpMethod.POST, httpEntity, LoanTransaction[].class);
+            queryResponse = new LoanTransactionQueryResponse();
+            queryResponse.setStatusCode(responseResult.getStatusCode());
+            queryResponse.setTransactions(responseResult.getBody());
+        } catch (RestClientException e) {
+            queryResponse = handleQueryErrorResponse(e);
+        } catch (Exception e) {
+            System.err.println(e.toString());
+            throw new RuntimeException(e);
+        }
+        return queryResponse;
+    }
+
+    @Override
+    public LoanTransactionQueryResponse getLoanDisbursement(String accountKey) {
+        LoanTransactionQueryResponse queryResponse = null;
+        var loanIdFilter = new MambuQueryFilter();
+        loanIdFilter.setField("parentAccountKey");
+        loanIdFilter.setOperator("EQUALS");
+        loanIdFilter.setValue(accountKey);
+        var typeFilter = new MambuQueryFilter();
+        typeFilter.setField("type");
+        typeFilter.setOperator("IN");
+        typeFilter.setValues(new String[]{"DISBURSEMENT"});
+        var nonReversedFilter = new MambuQueryFilter();
+        nonReversedFilter.setField("adjustmentTransactionKey");
+        nonReversedFilter.setOperator("EMPTY");
+        MambuQueryFilter[] queryFilters = new MambuQueryFilter[]{loanIdFilter, typeFilter, nonReversedFilter};
+        var sortingCriteria = new MambuSortingCriteria();
+        sortingCriteria.setField("creationDate");
+        sortingCriteria.setOrder("DESC");
+        TransactionFilterInfo filterInfo = new TransactionFilterInfo();
+        filterInfo.setFilterCriteria(queryFilters);
+        filterInfo.setSortingCriteria(sortingCriteria);
+        queryResponse = getLoanTransactions(filterInfo, 1);
+        return queryResponse;
+    }
+
+    @Override
+    public LoanTransactionQueryResponse getLoanRepayments(String accountKey) {
+        LoanTransactionQueryResponse queryResponse = null;
+        var loanIdFilter = new MambuQueryFilter();
+        loanIdFilter.setField("parentAccountKey");
+        loanIdFilter.setOperator("EQUALS");
+        loanIdFilter.setValue(accountKey);
+        var typeFilter = new MambuQueryFilter();
+        typeFilter.setField("type");
+        typeFilter.setOperator("IN");
+        typeFilter.setValues(new String[]{"REPAYMENT"});
+        var nonReversedFilter = new MambuQueryFilter();
+        nonReversedFilter.setField("adjustmentTransactionKey");
+        nonReversedFilter.setOperator("EMPTY");
+        MambuQueryFilter[] queryFilters = new MambuQueryFilter[]{loanIdFilter, typeFilter ,nonReversedFilter};
+        var sortingCriteria = new MambuSortingCriteria();
+        sortingCriteria.setField("creationDate");
+        sortingCriteria.setOrder("DESC");
+        TransactionFilterInfo filterInfo = new TransactionFilterInfo();
+        filterInfo.setFilterCriteria(queryFilters);
+        filterInfo.setSortingCriteria(sortingCriteria);
+        queryResponse = getLoanTransactions(filterInfo, 0);
+        return queryResponse;
     }
 
     private static LoanAccountResponse handleLoanAccountErrorResponse(RestClientException e) {
@@ -288,5 +372,14 @@ public class LoanProductRepository implements LoanProductService {
         loanLockResponse.setStatusCode(errorCode);
         loanLockResponse.setErrors(errorResponse);
         return loanLockResponse;
+    }
+
+    private static LoanTransactionQueryResponse handleQueryErrorResponse(RestClientException e) {
+        LoanTransactionQueryResponse transactionQueryResponse = new LoanTransactionQueryResponse();
+        HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
+        MambuErrorResponse[] errorResponse = MambuAPIHelper.getMambuErrorResponses(e);
+        transactionQueryResponse.setStatusCode(errorCode);
+        transactionQueryResponse.setErrors(errorResponse);
+        return transactionQueryResponse;
     }
 }
