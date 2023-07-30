@@ -97,4 +97,11 @@ public class LoanProductController {
         ResponseEntity responseEntity = new ResponseEntity(response, response.getStatusCode());
         return responseEntity;
     }
+
+    @GetMapping("/loans/{accountKey}/details")
+    public ResponseEntity<LoanDetailQueryResponse> getLoanDetails(@PathVariable String accountKey) {
+        var response = productService.getLoanDetails(accountKey);
+        ResponseEntity responseEntity = new ResponseEntity(response, HttpStatus.OK);
+        return responseEntity;
+    }
 }

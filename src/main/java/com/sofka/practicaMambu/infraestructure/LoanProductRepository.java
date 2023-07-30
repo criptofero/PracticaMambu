@@ -9,7 +9,6 @@ import com.sofka.practicaMambu.domain.model.activeProducts.LoanAccount;
 import com.sofka.practicaMambu.domain.model.activeProducts.LoanTransaction;
 import com.sofka.practicaMambu.domain.model.query.MambuQueryFilter;
 import com.sofka.practicaMambu.domain.model.query.MambuSortingCriteria;
-import com.sofka.practicaMambu.domain.seedWork.CommonUtils;
 import com.sofka.practicaMambu.domain.seedWork.MambuAPIHelper;
 import com.sofka.practicaMambu.domain.seedWork.mappers.LoanAccountMapper;
 import com.sofka.practicaMambu.domain.service.LoanProductService;
@@ -357,6 +356,20 @@ public class LoanProductRepository implements LoanProductService {
             throw new RuntimeException(e);
         }
         return loanScheduleQueryResponse;
+    }
+
+    @Override
+    public LoanDetailQueryResponse getLoanDetails(String accountKey) {
+        LoanDetailQueryResponse queryResponse = new LoanDetailQueryResponse();
+        var loanInfo = getLoanAccountById(accountKey);
+        var disbursementInfo = getLoanDisbursement(accountKey);
+        var repaymentsInfo = getLoanRepayments(accountKey);
+        var loanScheduleInfo = getLoanRepaymentsSchedule(accountKey);
+        queryResponse.setLoanAccountInfo(loanInfo);
+        queryResponse.setDisbursementDetails(disbursementInfo);
+        queryResponse.setRepayments(repaymentsInfo);
+        queryResponse.setSchedule(loanScheduleInfo);
+        return queryResponse;
     }
 
     private static LoanAccountResponse handleLoanAccountErrorResponse(RestClientException e) {
