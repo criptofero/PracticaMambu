@@ -338,6 +338,27 @@ public class LoanProductRepository implements LoanProductService {
         return queryResponse;
     }
 
+    @Override
+    public LoanScheduleQueryResponse getLoanRepaymentsSchedule(String accountKey) {
+        LoanScheduleQueryResponse loanScheduleQueryResponse = null;
+        String operationUrl = mambuAPIRootUrl.concat("/loans/{accountKey}/schedule");
+        ResponseEntity<LoanScheduleQueryResponse> responseResult = null;
+        try {
+            HttpHeaders requestHeaders = new HttpHeaders();
+            requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
+            MambuAPIHelper.addAcceptHeader(requestHeaders);
+            HttpEntity<?> httpEntity = new HttpEntity<>(null, requestHeaders);
+            RestTemplate restTemplate = new RestTemplate();
+            responseResult = restTemplate.exchange(operationUrl, HttpMethod.GET, httpEntity, LoanScheduleQueryResponse.class, accountKey);
+            loanScheduleQueryResponse = responseResult.getBody();
+            loanScheduleQueryResponse.setStatusCode(responseResult.getStatusCode());
+        } catch (Exception e) {
+            System.err.println(e);
+            throw new RuntimeException(e);
+        }
+        return loanScheduleQueryResponse;
+    }
+
     private static LoanAccountResponse handleLoanAccountErrorResponse(RestClientException e) {
         LoanAccountResponse loanAccountResponse = new LoanAccountResponse();
         HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);

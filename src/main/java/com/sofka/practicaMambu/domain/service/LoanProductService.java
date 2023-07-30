@@ -15,4 +15,5 @@ public interface LoanProductService {
     LoanTransactionQueryResponse getLoanTransactions(TransactionFilterInfo transactionFilterInfo, int rowsLimit);
     LoanTransactionQueryResponse getLoanDisbursement(String accountKey);
     LoanTransactionQueryResponse getLoanRepayments(String accountKey);
+    LoanScheduleQueryResponse getLoanRepaymentsSchedule(String accountKey);
 }

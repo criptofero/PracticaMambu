@@ -90,4 +90,11 @@ public class LoanProductController {
         ResponseEntity responseEntity = new ResponseEntity(response, response.getStatusCode());
         return responseEntity;
     }
+
+    @GetMapping("/loans/{accountKey}/schedule")
+    public ResponseEntity<LoanScheduleQueryResponse> getLoanRepaymentsSchedule(@PathVariable String accountKey) {
+        var response = productService.getLoanRepaymentsSchedule(accountKey);
+        ResponseEntity responseEntity = new ResponseEntity(response, response.getStatusCode());
+        return responseEntity;
+    }
 }
