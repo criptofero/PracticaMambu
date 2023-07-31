@@ -17,4 +17,7 @@ public interface LoanProductService {
     LoanTransactionQueryResponse getLoanRepayments(String accountKey);
     LoanScheduleQueryResponse getLoanRepaymentsSchedule(String accountKey);
     LoanDetailQueryResponse getLoanDetails(String accountKey);
+
+    LoanAccountQueryResponse refinancieLoan(String accountKey, LoanRefinanceCommand refinanceCommand);
+    LoanAccountQueryResponse rescheduleLoan(String accountKey, LoanRefinanceCommand refinanceCommand);
 }

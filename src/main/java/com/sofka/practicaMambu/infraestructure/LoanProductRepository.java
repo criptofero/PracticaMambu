@@ -372,6 +372,43 @@ public class LoanProductRepository implements LoanProductService {
         return queryResponse;
     }
 
+    @Override
+    public LoanAccountQueryResponse refinancieLoan(String accountKey, LoanRefinanceCommand refinanceCommand) {
+        LoanAccountQueryResponse refinanceResponse = null;
+        String operationUrl = mambuAPIRootUrl.concat("/loans/{accountKey}:refinance");
+        String jsonBody;
+        ObjectMapper mapper = new ObjectMapper();
+        ResponseEntity<LoanAccountQueryResponse> responseResult = null;
+        try {
+            jsonBody = mapper.writeValueAsString(refinanceCommand);
+            HttpHeaders requestHeaders = new HttpHeaders();
+            requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
+            MambuAPIHelper.addAcceptHeader(requestHeaders);
+            MambuAPIHelper.addIdempotencyHeader(requestHeaders, jsonBody);
+            HttpEntity<LoanRefinanceCommand> httpEntity = new HttpEntity<>(refinanceCommand, requestHeaders);
+            RestTemplate restTemplate = new RestTemplate();
+            responseResult = restTemplate.exchange(operationUrl, HttpMethod.POST, httpEntity, LoanAccountQueryResponse.class, accountKey);
+            var refinanceBody = responseResult.getBody();
+            if (responseResult.getStatusCode() != null && !responseResult.getStatusCode().isError()) {
+                refinanceResponse = getLoanAccountById(refinanceBody.getEncodedKey());
+                refinanceResponse.setStatusCode(HttpStatus.OK);
+            }
+        } catch (RestClientException e) {
+            refinanceResponse = handleLoanActionResponse(e);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        } catch (Exception e) {
+            System.err.println(e.toString());
+            throw new RuntimeException(e);
+        }
+        return refinanceResponse;
+    }
+
+    @Override
+    public LoanAccountQueryResponse rescheduleLoan(String accountKey, LoanRefinanceCommand refinanceCommand) {
+        return null;
+    }
+
     private static LoanAccountResponse handleLoanAccountErrorResponse(RestClientException e) {
         LoanAccountResponse loanAccountResponse = new LoanAccountResponse();
         HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);

@@ -27,6 +27,7 @@ public class LoanAccountQueryResponse implements MambuResponse {
     private LoanBalanceInfo balances;
     private InterestSettings interestSettings;
     private LoanScheduleSettings scheduleSettings;
+    private String originalAccountKey;
 
     private MambuErrorResponse[] errors;
 
@@ -171,5 +172,13 @@ public class LoanAccountQueryResponse implements MambuResponse {
     @Override
     public void setStatusCode(HttpStatusCode statusCode) {
         this.statusCode = statusCode;
+    }
+
+    public String getOriginalAccountKey() {
+        return originalAccountKey;
+    }
+
+    public void setOriginalAccountKey(String originalAccountKey) {
+        this.originalAccountKey = originalAccountKey;
     }
 }
