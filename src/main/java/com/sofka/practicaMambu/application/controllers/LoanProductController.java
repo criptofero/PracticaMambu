@@ -106,8 +106,8 @@ public class LoanProductController {
     }
 
     @PostMapping("/loans/{accountKey}:refinance")
-    public ResponseEntity<LoanAccountQueryResponse> refinancieLoan(@PathVariable String accountKey, @RequestBody LoanRefinanceCommand refinanceCommand) {
-        var response = productService.refinancieLoan(accountKey, refinanceCommand);
+    public ResponseEntity<LoanAccountQueryResponse> refinanceLoan(@PathVariable String accountKey, @RequestBody LoanRefinanceCommand refinanceCommand) {
+        var response = productService.refinanceLoan(accountKey, refinanceCommand);
         ResponseEntity responseEntity = new ResponseEntity(response, response.getStatusCode());
         return responseEntity;
     }

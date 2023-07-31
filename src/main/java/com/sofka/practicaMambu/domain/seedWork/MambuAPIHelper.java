@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.UUID;
 
 public class MambuAPIHelper {
@@ -62,5 +63,19 @@ public class MambuAPIHelper {
             errorResponse = MambuErrorResponse.fromJson(jsonError);
         }
         return errorResponse;
+    }
+
+    public static MambuResponse handleErrorResponse(RestClientException e, Class responseType){
+        MambuResponse responseInstance = null;
+        try {
+            responseInstance = (MambuResponse) responseType.getDeclaredConstructor().newInstance();
+            HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
+            MambuErrorResponse[] errorResponse = MambuAPIHelper.getMambuErrorResponses(e);
+            responseInstance.setStatusCode(errorCode);
+            responseInstance.setErrors(errorResponse);
+        } catch (Exception ex) {
+            responseInstance = null;
+        }
+        return responseInstance;
     }
 }

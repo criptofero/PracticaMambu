@@ -373,7 +373,7 @@ public class LoanProductRepository implements LoanProductService {
     }
 
     @Override
-    public LoanAccountQueryResponse refinancieLoan(String accountKey, LoanRefinanceCommand refinanceCommand) {
+    public LoanAccountQueryResponse refinanceLoan(String accountKey, LoanRefinanceCommand refinanceCommand) {
         LoanAccountQueryResponse refinanceResponse = null;
         String operationUrl = mambuAPIRootUrl.concat("/loans/{accountKey}:refinance");
         String jsonBody;
@@ -394,7 +394,7 @@ public class LoanProductRepository implements LoanProductService {
                 refinanceResponse.setStatusCode(HttpStatus.OK);
             }
         } catch (RestClientException e) {
-            refinanceResponse = handleLoanActionResponse(e);
+            refinanceResponse = (LoanAccountQueryResponse) MambuAPIHelper.handleErrorResponse(e, LoanAccountQueryResponse.class);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } catch (Exception e) {
@@ -426,7 +426,7 @@ public class LoanProductRepository implements LoanProductService {
                 rescheduleResponse.setStatusCode(HttpStatus.OK);
             }
         } catch (RestClientException e) {
-            rescheduleResponse = handleLoanActionResponse(e);
+            rescheduleResponse = (LoanAccountQueryResponse) MambuAPIHelper.handleErrorResponse(e, LoanAccountQueryResponse.class);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } catch (Exception e) {
