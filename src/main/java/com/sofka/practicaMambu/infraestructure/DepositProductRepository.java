@@ -120,7 +120,7 @@ public class DepositProductRepository implements DepositProductService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } catch (RestClientException e) {
-            createDepositResponse = handleDepositTransactionErrorResponse(e);
+            createDepositResponse = (CreateDepositTransactionResponse) MambuAPIHelper.handleErrorResponse(e, CreateDepositTransactionResponse.class);
         } catch (Exception e) {
             System.err.println(e.toString());
             throw new RuntimeException(e);
@@ -153,7 +153,8 @@ public class DepositProductRepository implements DepositProductService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } catch (RestClientException e) {
-            createWithdrawalResponse = handleDepositTransactionErrorResponse(e);
+            createWithdrawalResponse = (CreateDepositTransactionResponse) MambuAPIHelper.handleErrorResponse(e, CreateDepositTransactionResponse.class);
+            ;
         } catch (Exception e) {
             System.err.println(e.toString());
             throw new RuntimeException(e);
@@ -177,7 +178,7 @@ public class DepositProductRepository implements DepositProductService {
             queryResponse.setStatusCode(responseResult.getStatusCode());
             queryResponse.setTransactions(responseResult.getBody());
         } catch (RestClientException e) {
-            queryResponse = handleQueryErrorResponse(e);
+            queryResponse = (TransactionsQueryResponse) MambuAPIHelper.handleErrorResponse(e, TransactionsQueryResponse.class);
         } catch (Exception e) {
             System.err.println(e.toString());
             throw new RuntimeException(e);
@@ -230,7 +231,7 @@ public class DepositProductRepository implements DepositProductService {
             responseResult = restTemplate.postForEntity(operationUrl, httpEntity, CreateBalanceBlockResponse.class, accountKey);
             blockResponse = responseResult.getBody();
         } catch (RestClientException e) {
-            blockResponse = handleBlockAccountBalanceErrorResponse(e);
+            blockResponse = (CreateBalanceBlockResponse) MambuAPIHelper.handleErrorResponse(e, CreateBalanceBlockResponse.class);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } catch (Exception e) {
@@ -290,7 +291,7 @@ public class DepositProductRepository implements DepositProductService {
                 seizureResponse = responseResult.getBody();
                 seizureResponse.setStatusCode(responseResult.getStatusCode());
             } catch (RestClientException e) {
-                seizureResponse = handleApplySeizureErrorResponse(e);
+                seizureResponse = (ApplySeizureResponse) MambuAPIHelper.handleErrorResponse(e, ApplySeizureResponse.class);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             } catch (Exception e) {
@@ -323,7 +324,7 @@ public class DepositProductRepository implements DepositProductService {
             lockAccountResponse = responseResult.getBody();
             lockAccountResponse.setStatusCode(responseResult.getStatusCode());
         } catch (RestClientException e) {
-            lockAccountResponse = handleLockAccountErrorResponse(e);
+            lockAccountResponse = (LockAccountResponse) MambuAPIHelper.handleErrorResponse(e, LockAccountResponse.class);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } catch (Exception e) {
@@ -351,7 +352,7 @@ public class DepositProductRepository implements DepositProductService {
             responseResult = restTemplate.postForEntity(operationUrl, httpEntity, ApplyInterestResponse.class, accountKey);
             applyInterestResponse = responseResult.getBody();
         } catch (RestClientException e) {
-            applyInterestResponse = handleApplyInterestErrorResponse(e);
+            applyInterestResponse = (ApplyInterestResponse) MambuAPIHelper.handleErrorResponse(e, ApplyInterestResponse.class);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } catch (Exception e) {
@@ -359,59 +360,5 @@ public class DepositProductRepository implements DepositProductService {
             throw new RuntimeException(e);
         }
         return applyInterestResponse;
-    }
-
-    private ApplyInterestResponse handleApplyInterestErrorResponse(RestClientException e) {
-        ApplyInterestResponse applyInterestResponse = new ApplyInterestResponse();
-        HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
-        MambuErrorResponse[] errorResponse = MambuAPIHelper.getMambuErrorResponses(e);
-        applyInterestResponse.setStatusCode(errorCode);
-        applyInterestResponse.setErrors(errorResponse);
-        return applyInterestResponse;
-    }
-
-    private static CreateDepositTransactionResponse handleDepositTransactionErrorResponse(RestClientException e) {
-        CreateDepositTransactionResponse createTransactionResponse = new CreateDepositTransactionResponse();
-        HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
-        MambuErrorResponse[] errorResponse = MambuAPIHelper.getMambuErrorResponses(e);
-        createTransactionResponse.setStatusCode(errorCode);
-        createTransactionResponse.setErrors(errorResponse);
-        return createTransactionResponse;
-    }
-
-    private TransactionsQueryResponse handleQueryErrorResponse(RestClientException e) {
-        TransactionsQueryResponse queryErrorResponse = new TransactionsQueryResponse();
-        HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
-        MambuErrorResponse[] errorResponse = MambuAPIHelper.getMambuErrorResponses(e);
-        queryErrorResponse.setStatusCode(errorCode);
-        queryErrorResponse.setErrors(errorResponse);
-        return queryErrorResponse;
-    }
-
-    private static CreateBalanceBlockResponse handleBlockAccountBalanceErrorResponse(RestClientException e) {
-        CreateBalanceBlockResponse balanceBlockResponse = new CreateBalanceBlockResponse();
-        HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
-        MambuErrorResponse[] errorResponse = MambuAPIHelper.getMambuErrorResponses(e);
-        balanceBlockResponse.setStatusCode(errorCode);
-        balanceBlockResponse.setErrors(errorResponse);
-        return balanceBlockResponse;
-    }
-
-    private ApplySeizureResponse handleApplySeizureErrorResponse(RestClientException e) {
-        ApplySeizureResponse applySeizureErrorResponse = new ApplySeizureResponse();
-        HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
-        MambuErrorResponse[] errorResponse = MambuAPIHelper.getMambuErrorResponses(e);
-        applySeizureErrorResponse.setStatusCode(errorCode);
-        applySeizureErrorResponse.setErrors(errorResponse);
-        return applySeizureErrorResponse;
-    }
-
-    private static LockAccountResponse handleLockAccountErrorResponse(RestClientException e) {
-        LockAccountResponse lockAccountResponse = new LockAccountResponse();
-        HttpStatusCode errorCode = MambuAPIHelper.getHttpStatusCode(e);
-        MambuErrorResponse[] errorResponse = MambuAPIHelper.getMambuErrorResponses(e);
-        lockAccountResponse.setStatusCode(errorCode);
-        lockAccountResponse.setErrors(errorResponse);
-        return lockAccountResponse;
     }
 }
