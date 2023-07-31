@@ -406,7 +406,34 @@ public class LoanProductRepository implements LoanProductService {
 
     @Override
     public LoanAccountQueryResponse rescheduleLoan(String accountKey, LoanRefinanceCommand refinanceCommand) {
-        return null;
+        LoanAccountQueryResponse rescheduleResponse = null;
+        String operationUrl = mambuAPIRootUrl.concat("/loans/{accountKey}:reschedule");
+        String jsonBody;
+        ObjectMapper mapper = new ObjectMapper();
+        ResponseEntity<LoanAccountQueryResponse> responseResult = null;
+        try {
+            jsonBody = mapper.writeValueAsString(refinanceCommand);
+            HttpHeaders requestHeaders = new HttpHeaders();
+            requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
+            MambuAPIHelper.addAcceptHeader(requestHeaders);
+            MambuAPIHelper.addIdempotencyHeader(requestHeaders, jsonBody);
+            HttpEntity<LoanRefinanceCommand> httpEntity = new HttpEntity<>(refinanceCommand, requestHeaders);
+            RestTemplate restTemplate = new RestTemplate();
+            responseResult = restTemplate.exchange(operationUrl, HttpMethod.POST, httpEntity, LoanAccountQueryResponse.class, accountKey);
+            var rescheduleBody = responseResult.getBody();
+            if (responseResult.getStatusCode() != null && !responseResult.getStatusCode().isError()) {
+                rescheduleResponse = getLoanAccountById(rescheduleBody.getEncodedKey());
+                rescheduleResponse.setStatusCode(HttpStatus.OK);
+            }
+        } catch (RestClientException e) {
+            rescheduleResponse = handleLoanActionResponse(e);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        } catch (Exception e) {
+            System.err.println(e.toString());
+            throw new RuntimeException(e);
+        }
+        return rescheduleResponse;
     }
 
     private static LoanAccountResponse handleLoanAccountErrorResponse(RestClientException e) {

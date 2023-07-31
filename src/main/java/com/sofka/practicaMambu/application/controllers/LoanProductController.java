@@ -111,4 +111,11 @@ public class LoanProductController {
         ResponseEntity responseEntity = new ResponseEntity(response, response.getStatusCode());
         return responseEntity;
     }
+
+    @PostMapping("/loans/{accountKey}:reschedule")
+    public ResponseEntity<LoanAccountQueryResponse> rescheduleLoan(@PathVariable String accountKey, @RequestBody LoanRefinanceCommand refinanceCommand) {
+        var response = productService.rescheduleLoan(accountKey, refinanceCommand);
+        ResponseEntity responseEntity = new ResponseEntity(response, response.getStatusCode());
+        return responseEntity;
+    }
 }

@@ -1,5 +1,8 @@
 package com.sofka.practicaMambu.domain.model.activeProducts;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class DisbursementDetail {
     private String expectedDisbursementDate;
     private String firstRepaymentDate;
