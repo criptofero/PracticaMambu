@@ -2,10 +2,11 @@ package com.sofka.practicaMambu.domain.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.sofka.practicaMambu.domain.model.contracts.MambuResponse;
 import org.springframework.http.HttpStatusCode;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class CreateDepositTransactionResponse {
+public class CreateDepositTransactionResponse implements MambuResponse {
     private String encodedKey;
     private String id;
     private String externalId;
