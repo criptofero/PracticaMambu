@@ -85,17 +85,22 @@ public class LoanProductRepository implements LoanProductService {
             LoanAccount loanAccount = LoanAccountMapper.INSTANCE.toLoanAccount(createAccountCommand);
             loanAccount.setProductTypeKey(productInfo.getEncodedKey());
             loanAccount.setAccountHolderType(LOAN_ACCOUNT_DEFAULT_HOLDER_TYPE);
-            jsonBody = mapper.writeValueAsString(loanAccount);
-            HttpHeaders requestHeaders = new HttpHeaders();
-            requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
-            MambuAPIHelper.addAcceptHeader(requestHeaders);
-            MambuAPIHelper.addContentHeader(requestHeaders);
-            MambuAPIHelper.addIdempotencyHeader(requestHeaders, jsonBody);
-            HttpEntity<String> httpEntity = new HttpEntity<>(jsonBody, requestHeaders);
-            RestTemplate restTemplate = new RestTemplate();
-            responseResult = restTemplate.postForEntity(operationUrl, httpEntity, LoanAccountResponse.class);
-            loanAccountResponse = responseResult.getBody();
-            loanAccountResponse.setStatusCode(responseResult.getStatusCode());
+            var validationErrors = checkLoanInfo(loanAccount, productInfo);
+            if (validationErrors != null) {
+                loanAccountResponse = validationErrors;
+            } else {
+                jsonBody = mapper.writeValueAsString(loanAccount);
+                HttpHeaders requestHeaders = new HttpHeaders();
+                requestHeaders.setBasicAuth(mambuAPIUserName, mambuAPIPassword);
+                MambuAPIHelper.addAcceptHeader(requestHeaders);
+                MambuAPIHelper.addContentHeader(requestHeaders);
+                MambuAPIHelper.addIdempotencyHeader(requestHeaders, jsonBody);
+                HttpEntity<String> httpEntity = new HttpEntity<>(jsonBody, requestHeaders);
+                RestTemplate restTemplate = new RestTemplate();
+                responseResult = restTemplate.postForEntity(operationUrl, httpEntity, LoanAccountResponse.class);
+                loanAccountResponse = responseResult.getBody();
+                loanAccountResponse.setStatusCode(responseResult.getStatusCode());
+            }
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } catch (RestClientException e) {
@@ -105,6 +110,43 @@ public class LoanProductRepository implements LoanProductService {
             throw new RuntimeException(e);
         }
         return loanAccountResponse;
+    }
+
+    private LoanAccountResponse checkLoanInfo(LoanAccount loanAccount, LoanProductResponse loanProductInfo) {
+        LoanAccountResponse loanValidationResponse = null;
+        if (loanAccount != null && loanProductInfo != null) {
+            MambuErrorResponse errorResponse = null;
+            var loanAmount = loanAccount.getLoanAmount();
+            var loanInstallments = loanAccount.getScheduleSettings().getRepaymentInstallments();
+            var productAmountSettings = loanProductInfo.getLoanAmountSettings();
+            var productInstallmentsSettings = loanProductInfo.getScheduleSettings().getNumInstallments();
+            if (loanAmount <= 0) {
+                loanValidationResponse = new LoanAccountResponse();
+                errorResponse = new MambuErrorResponse();
+                errorResponse.setErrorCode(1201);
+                errorResponse.setErrorReason("Monto de préstamo %,d es inválido, debe ser un valor mayor a cero.".formatted(loanAmount));
+                errorResponse.setErrorSource(this.getClass().getName());
+                loanValidationResponse.setErrors(new MambuErrorResponse[]{errorResponse});
+                loanValidationResponse.setStatusCode(HttpStatus.BAD_REQUEST);
+            } else if (productAmountSettings != null && loanAmount < productAmountSettings.getLoanAmount().getMinValue() || loanAmount > productAmountSettings.getLoanAmount().getMaxValue()) {
+                loanValidationResponse = new LoanAccountResponse();
+                errorResponse = new MambuErrorResponse();
+                errorResponse.setErrorCode(1202);
+                errorResponse.setErrorReason("Monto de préstamo %,d esta fuera del rango permitido [Mínimo: %,d; Máximo: %,d]).".formatted(loanAmount, productAmountSettings.getLoanAmount().getMinValue(), productAmountSettings.getLoanAmount().getMaxValue()));
+                errorResponse.setErrorSource(this.getClass().getName());
+                loanValidationResponse.setErrors(new MambuErrorResponse[]{errorResponse});
+                loanValidationResponse.setStatusCode(HttpStatus.BAD_REQUEST);
+            }else if (productInstallmentsSettings != null &&  loanInstallments < productInstallmentsSettings.getMinValue() || loanInstallments > productInstallmentsSettings.getMaxValue()){
+                loanValidationResponse = new LoanAccountResponse();
+                errorResponse = new MambuErrorResponse();
+                errorResponse.setErrorCode(1203);
+                errorResponse.setErrorReason("Número de cuotas de préstamo esta fuera del rango permitido [Mínimo: %d; Máximo: %d]).".formatted(productInstallmentsSettings.getMinValue(), productInstallmentsSettings.getMaxValue()));
+                errorResponse.setErrorSource(this.getClass().getName());
+                loanValidationResponse.setErrors(new MambuErrorResponse[]{errorResponse});
+                loanValidationResponse.setStatusCode(HttpStatus.BAD_REQUEST);
+            }
+        }
+        return loanValidationResponse;
     }
 
     @Override
