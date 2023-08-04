@@ -1,8 +1,14 @@
 package com.sofka.practicaMambu.domain.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.sofka.practicaMambu.domain.model.contracts.MambuResponse;
+import org.springframework.http.HttpStatusCode;
+
 import java.util.Map;
 
-public class ClientCreateResponseDTO {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class ClientCreateResponseDTO implements MambuResponse {
     private String encodedKey;
     private String id;
     private String state;
@@ -14,12 +20,21 @@ public class ClientCreateResponseDTO {
     private String preferredLanguage;
     private String gender;
     private String clientRoleKey;
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private int loanCycle;
+
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private int groupLoanCycle;
     private String[] addresses;
     private String[] idDocuments;
     private Map<String,String> customFields;
 
+    private MambuErrorResponse[] errors;
+
+    @JsonIgnore
+    private HttpStatusCode statusCode;
+
+    //region Getters & Setters
     public String getEncodedKey() {
         return encodedKey;
     }
@@ -147,4 +162,25 @@ public class ClientCreateResponseDTO {
     public void setCustomFields(Map<String, String> customFields) {
         this.customFields = customFields;
     }
+
+    @Override
+    public MambuErrorResponse[] getErrors() {
+        return errors;
+    }
+
+    @Override
+    public void setErrors(MambuErrorResponse[] errors) {
+        this.errors = errors;
+    }
+
+    @Override
+    public HttpStatusCode getStatusCode() {
+        return statusCode;
+    }
+
+    @Override
+    public void setStatusCode(HttpStatusCode statusCode) {
+        this.statusCode = statusCode;
+    }
+    //endregion
 }

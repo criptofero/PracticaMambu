@@ -1,5 +1,8 @@
 package com.sofka.practicaMambu.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Map;
 
 public class Client {
@@ -11,7 +14,10 @@ public class Client {
     private String gender;
     private String address;
     private String preferredLanguage;
-    private Map<String,String> customFields;
+
+    private String notes;
+    @JsonProperty("_personalizados")
+    private CustomField personalizados;
 
     public String getFirstName() {
         return firstName;
@@ -77,11 +83,19 @@ public class Client {
         this.preferredLanguage = preferredLanguage;
     }
 
-    public Map<String, String> getCustomFields() {
-        return customFields;
+    public CustomField getPersonalizados() {
+        return personalizados;
     }
 
-    public void setCustomFields(Map<String, String> customFields) {
-        this.customFields = customFields;
+    public void setPersonalizados(CustomField personalizados) {
+        this.personalizados = personalizados;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
     }
 }
